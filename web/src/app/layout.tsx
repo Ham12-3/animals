@@ -26,7 +26,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="min-h-full flex flex-col">
         {children}
-        <footer className="h-12 shrink-0 border-t border-neutral-500/20 px-4 text-xs leading-[3rem] text-neutral-500">
+        <footer className="flex h-12 shrink-0 items-center border-t border-neutral-500/20 px-4 text-xs leading-tight text-neutral-500">
           {zonesFile.site.disclaimer}
         </footer>
       </body>

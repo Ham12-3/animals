@@ -7,6 +7,7 @@ writes work/<zone>/publish/:
 
     <zone>.spz            desktop build (default budget 40 MB)
     <zone>.mobile.spz     mobile LOD: no view-dependent colour, fewer splats (15 MB)
+    <zone>.collision.glb  invisible collision mesh (20 cm voxels), same frame
     <zone>.json           metadata for the web app: units, spawn point, bounds,
                           camera path, north, file sizes
     preview_*.webp        renders before/after cleanup, for review
@@ -37,6 +38,7 @@ import numpy as np
 import pycolmap
 
 from . import PIPELINE_DIR, WORK_DIR, ZONES_FILE
+from .glb import rotate_vertices
 from .splat_ply import read_ply, select, sh_degree, transform, write_ply
 
 SPLAT_TRANSFORM = PIPELINE_DIR / "node_modules" / ".bin" / ("splat-transform.cmd" if os.name == "nt" else "splat-transform")
@@ -240,7 +242,12 @@ def publish(zone_dir: Path, eye_height: float, scale: float | None, north_deg: f
     if not ply_in.is_file():
         raise SystemExit(f"no splat at {ply_in}; run train-splat first (or put the Colab PLY there)")
     out = zone_dir / "publish"
+    # Hand-authored files survive a re-publish; everything else is rebuilt.
+    keep = {f: (out / f).read_bytes() for f in ("hotspots.json",) if (out / f).is_file()}
     shutil.rmtree(out, ignore_errors=True)
+    out.mkdir(parents=True)
+    for f, data in keep.items():
+        (out / f).write_bytes(data)
     tmp = out / "_tmp"
     tmp.mkdir(parents=True)
 
@@ -295,6 +302,15 @@ def publish(zone_dir: Path, eye_height: float, scale: float | None, north_deg: f
         clean, out / f"{zone}.mobile.spz", budget.mobile_mb, [0], budget.mobile_max_splats, tmp
     )
 
+    # 5. Invisible collision mesh: solid voxels (20 cm) meshed by splat-transform.
+    #    Its output is in splat-transform's internal frame (x and y negated, a
+    #    180 deg turn about Z), so rotate it back into the splat's frame.
+    _st(clean, "--voxel-size", "0.2", "--voxel-opacity", "0.3", "--collision-mesh", "smooth", tmp / "col.voxel.json")
+    collision = out / f"{zone}.collision.glb"
+    shutil.move(tmp / "col.collision.glb", collision)
+    rotate_vertices(collision, np.diag([-1.0, -1.0, 1.0]))
+    report.outputs["collision"] = {"file": collision.name, "mb": round(collision.stat().st_size / 1e6, 2)}
+
     first = images[0]
     look = first.cam_from_world().rotation.matrix().T @ np.array([0.0, 0.0, 1.0])
     look_aligned = np.array(align.rotation) @ look
@@ -308,7 +324,7 @@ def publish(zone_dir: Path, eye_height: float, scale: float | None, north_deg: f
         "groundY": 0.0,
         "files": {k: v["file"] for k, v in report.outputs.items()},
         "sizesMB": {k: v["mb"] for k, v in report.outputs.items()},
-        "splats": {k: v["splats"] for k, v in report.outputs.items()},
+        "splats": {k: v["splats"] for k, v in report.outputs.items() if "splats" in v},
         "bounds": {"min": np.round(lo, 2).tolist(), "max": np.round(hi, 2).tolist()},
         "spawn": {"position": np.round(cams[0], 3).tolist(), "yawDeg": round(yaw, 1)},
         "eyeHeight": eye_height,
@@ -373,7 +389,8 @@ def main(argv: list[str] | None = None) -> None:
     al = r["alignment"]
     print(f"  scale {al['scale']:.3f} m/unit (eye height {al['eye_height_m']} m), ground fit {al['ground_inlier_ratio']:.0%}")
     for k, o in r["outputs"].items():
-        print(f"  {k:<8} {o['file']:<40} {o['mb']:>6} MB  {o['splats']:>9,} splats  SH{o['sh_degree']}")
+        detail = f"{o['splats']:>9,} splats  SH{o['sh_degree']}" if "splats" in o else ""
+        print(f"  {k:<9} {o['file']:<40} {o['mb']:>6} MB  {detail}")
     for w in r["warnings"]:
         print(f"  ! {w}")
 

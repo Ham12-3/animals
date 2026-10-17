@@ -28,7 +28,7 @@ Vercel Blob.
 | 3 | Camera poses (COLMAP) | done (tested on private sample) |
 | 4 | Splat training (Brush, Colab fallback) | tooling done, waiting for footage |
 | 5 | Cleanup, alignment, SPZ + mobile LOD | done (tested on private sample) |
-| 6 | Web explorer | |
+| 6 | Web explorer | built, waiting for approval |
 | 7 | Animated animals | |
 | 8 | Polish and deploy | |
 
@@ -40,7 +40,7 @@ cd pipeline && uv sync
 uv run extract-frames elephant-care-centre
 
 # web
-cd web && pnpm install && pnpm dev   # http://localhost:3000, renderer check at /dev/spark
+cd web && pnpm install && pnpm dev   # http://localhost:3000, explorer at /explore
 ```
 
 ## Shooting footage that reconstructs well

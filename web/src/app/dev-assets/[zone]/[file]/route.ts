@@ -23,7 +23,13 @@ export async function GET(_req: Request, ctx: RouteContext<"/dev-assets/[zone]/[
   }
   try {
     const body = await readFile(path.join(WORK_DIR, zone, "publish", file));
-    return new Response(body, { headers: { "Content-Type": TYPES[ext], "Cache-Control": "no-store" } });
+    return new Response(body, {
+      headers: {
+        "Content-Type": TYPES[ext],
+        "Content-Length": String(body.length), // lets the loading screen show real progress
+        "Cache-Control": "no-store",
+      },
+    });
   } catch {
     return new Response("Not found", { status: 404 });
   }

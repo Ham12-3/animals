@@ -140,3 +140,38 @@ def test_alignment_recovers_ground_scale_and_up():
     walk = cams[-1] - cams[0]
     assert walk[2] < -0.9 * np.linalg.norm(walk)
     assert not [w for w in warnings if "ground" in w.lower()]
+
+
+def test_glb_rotation_round_trip(tmp_path):
+    import json
+    import struct
+
+    from vantara_pipeline.glb import rotate_vertices
+
+    pos = np.array([[1, 2, 3], [-4, 5, 6], [7, -8, 9]], np.float32)
+    idx = np.array([0, 1, 2], np.uint16)
+    binary = pos.tobytes() + idx.tobytes() + b"\0\0"
+    doc = {
+        "asset": {"version": "2.0"},
+        "buffers": [{"byteLength": len(binary)}],
+        "bufferViews": [{"buffer": 0, "byteOffset": 0, "byteLength": 36}, {"buffer": 0, "byteOffset": 36, "byteLength": 6}],
+        "accessors": [
+            {"bufferView": 0, "componentType": 5126, "count": 3, "type": "VEC3", "min": [0, 0, 0], "max": [0, 0, 0]},
+            {"bufferView": 1, "componentType": 5123, "count": 3, "type": "SCALAR"},
+        ],
+        "meshes": [{"primitives": [{"attributes": {"POSITION": 0}, "indices": 1}]}],
+    }
+    js = json.dumps(doc).encode()
+    js += b" " * (-len(js) % 4)
+    glb = struct.pack("<III", 0x46546C67, 2, 28 + len(js) + len(binary))
+    glb += struct.pack("<II", len(js), 0x4E4F534A) + js + struct.pack("<II", len(binary), 0x004E4942) + binary
+    path = tmp_path / "t.glb"
+    path.write_bytes(glb)
+
+    bounds = rotate_vertices(path, np.diag([-1.0, -1.0, 1.0]))
+    data = path.read_bytes()
+    n = struct.unpack_from("<I", data, 12)[0]
+    out = np.frombuffer(data, np.float32, count=9, offset=20 + n + 8).reshape(3, 3)
+    np.testing.assert_allclose(out, pos * [-1, -1, 1])
+    assert bounds["min"] == [-7.0, -5.0, 3.0] and bounds["max"] == [4.0, 8.0, 9.0]
+    assert np.frombuffer(data, np.uint16, count=3, offset=20 + n + 8 + 36).tolist() == [0, 1, 2]

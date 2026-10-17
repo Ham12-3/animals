@@ -19,6 +19,12 @@ export default function Home() {
           A walkable Gaussian-splat reconstruction of {zonesFile.site.name},{" "}
           {zonesFile.site.location}.
         </p>
+        <Link
+          href="/explore"
+          className="mt-2 w-fit rounded-full bg-emerald-600 px-5 py-2 text-sm font-medium text-white hover:bg-emerald-500"
+        >
+          Open the explorer
+        </Link>
       </header>
 
       <section className="grid gap-6 md:grid-cols-[1fr_1fr]">
@@ -46,6 +52,11 @@ export default function Home() {
                 </span>
               </div>
               {z.description && <p className="mt-1 text-sm text-neutral-500">{z.description}</p>}
+              {z.status === "live" && (
+                <Link href={`/explore?zone=${z.id}`} className="mt-2 inline-block text-sm text-emerald-600 underline">
+                  Explore
+                </Link>
+              )}
             </li>
           ))}
         </ul>
