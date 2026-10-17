@@ -4,6 +4,11 @@
     uv run python -m vantara_pipeline.blender_bridge execute_code \
         --code "exec(open('C:/Users/mobol/Downloads/animals/world/scripts/export_web.py', encoding='utf-8').read())"
 
+or headless (it renders tree billboards and the map, so it needs a Blender
+that can render; the interactive session sometimes can't, see DEVLOG):
+
+    blender -b world/vantara_world.blend -P world/scripts/export_web.py
+
 Run after dress_zones.py, in vantara_world.blend. Writes world/publish/
 (not in git), laid out like the splat zones so the explorer and the asset
 host treat both the same way:
@@ -47,16 +52,24 @@ RENDER_MAP = globals().get("RENDER_MAP", True)
 
 GROUND_Y = 0.12  # Vantara grounds (Blender z); the walk fallback plane
 EYE_HEIGHT = 1.6
-LOD_DISTANCE = 60.0  # metres: plants further than this use LOD1
+# role -> levels of detail (faces, or "billboard": two crossed quads with renders of the
+# plant) and the distances (m) where each level hands over to the next.
 # role -> (LOD0 faces, LOD1 faces)
-PLANT_LODS = {"tree": (30_000, 4_000), "bush": (8_000, 2_000), "shrub": (5_000, 1_200), "rock": (3_000, 500)}
+PLANT_LODS = {
+    "tree": ((30_000, 6_000, "billboard"), (35.0, 100.0)),
+    "bush": ((5_000, 1_500), (50.0,)),
+    "shrub": ((3_000, 1_000), (40.0,)),
+    "rock": ((3_000, 500), (60.0,)),
+}
+BILLBOARD_PX = 512
+BILLBOARD_TMP = os.path.join(OUT, "_billboards")
 # Web texture budget: colour maps stay 1k, data maps (normal, AO/roughness) go to 512.
 DATA_MAP_SIZE = 512
 JPEG_QUALITY = 82
 DRACO = dict(export_draco_mesh_compression_enable=True, export_draco_mesh_compression_level=6,
              export_draco_position_quantization=14, export_draco_normal_quantization=10,
              export_draco_texcoord_quantization=12)  # fmt: skip
-SITE_COLLECTIONS = ("Terrain", "Vantara (outline from OSM)", "Roads, rail, water (OSM)")
+SITE_COLLECTIONS = ("Terrain", "Vantara (outline from OSM)", "Roads, rail, water (OSM)", "Dress: water")
 
 # Explorer zones (zones.json ids) -> layout zone, spawn (Blender x, y), heading (deg clockwise from north).
 EXPLORER_ZONES = {
@@ -165,7 +178,14 @@ def web_material(src):
             img.colorspace_settings.name = "Non-Color"
         return t
 
-    if src.name == "Blockout: mesh":
+    if src.get("vantara_water"):
+        attr = nt.nodes.new("ShaderNodeVertexColor")
+        attr.layer_name = "Col"
+        bsdf.inputs["Base Color"].default_value = (1, 1, 1, 1)
+        nt.links.new(attr.outputs["Color"], bsdf.inputs["Base Color"])
+        nt.links.new(attr.outputs["Alpha"], bsdf.inputs["Alpha"])
+        mat["web_tile"] = 4.0
+    elif src.name == "Blockout: mesh":
         t = tex(chainlink_image(), 200)
         nt.links.new(t.outputs["Color"], bsdf.inputs["Base Color"])
         nt.links.new(t.outputs["Alpha"], bsdf.inputs["Alpha"])
@@ -271,6 +291,86 @@ def decimated(src_ob, faces, name, col, offset):
     return ob, len(out.polygons)
 
 
+def make_billboard(src_ob, key, col, offset):
+    """Far LOD: two crossed quads, textured with renders of the plant from the front and the side."""
+    main = bpy.context.scene
+    dg = bpy.context.evaluated_depsgraph_get()
+    me = bpy.data.meshes.new_from_object(src_ob.evaluated_get(dg))
+    me.transform(src_ob.matrix_world)
+    me.transform(Matrix.Translation(-Vector(offset)))
+    tree = bpy.data.objects.new("billboard src", me)
+    xs = [v.co.x for v in me.vertices]
+    ys = [v.co.y for v in me.vertices]
+    zs = [v.co.z for v in me.vertices]
+    height = max(zs)
+    size = max(max(xs) - min(xs), max(ys) - min(ys), height) * 1.04
+    scene = bpy.data.scenes.new("Billboard tmp")
+    scene.world = main.world
+    scene.render.engine = main.render.engine
+    scene.render.film_transparent = True
+    scene.render.resolution_x = scene.render.resolution_y = BILLBOARD_PX
+    scene.render.image_settings.file_format = "PNG"
+    scene.render.image_settings.color_mode = "RGBA"
+    scene.view_settings.view_transform = main.view_settings.view_transform
+    scene.view_settings.exposure = main.view_settings.exposure
+    scene.collection.objects.link(tree)
+    sun = bpy.data.objects.get("Sun")
+    if sun:
+        scene.collection.objects.link(sun)
+    cam = bpy.data.objects.new("Billboard cam", bpy.data.cameras.new("Billboard cam"))
+    cam.data.type = "ORTHO"
+    cam.data.ortho_scale = size
+    scene.collection.objects.link(cam)
+    scene.camera = cam
+    images = []
+    try:
+        # Front: looking north (+Y), image right = +X. Side: looking west (-X), image right = +Y.
+        for name, loc, rot in (("front", (0, -100, height / 2), (math.pi / 2, 0, 0)),
+                               ("side", (100, 0, height / 2), (math.pi / 2, 0, math.pi / 2))):  # fmt: skip
+            cam.location, cam.rotation_euler = loc, rot
+            # Rendered outside the export folder; the glTF exporter copies the images in.
+            os.makedirs(BILLBOARD_TMP, exist_ok=True)
+            path = os.path.join(BILLBOARD_TMP, f"{key}_billboard_{name}.png")
+            scene.render.filepath = path
+            bpy.ops.render.render(write_still=True, scene=scene.name)
+            img = bpy.data.images.load(path, check_existing=False)
+            img.name = f"{key}_billboard_{name}.png"
+            images.append(img)
+    finally:
+        bpy.data.objects.remove(cam, do_unlink=True)
+        bpy.data.scenes.remove(scene)
+        bpy.data.objects.remove(tree, do_unlink=True)
+        bpy.data.meshes.remove(me)
+    h, z0 = size / 2, height / 2 - size / 2
+    bm = bmesh.new()
+    uv = bm.loops.layers.uv.new("UVMap")
+    quads = (
+        [(-h, 0, z0), (h, 0, z0), (h, 0, z0 + size), (-h, 0, z0 + size)],
+        [(0, -h, z0), (0, h, z0), (0, h, z0 + size), (0, -h, z0 + size)],
+    )
+    out = bpy.data.meshes.new(f"{key}|lod-billboard")
+    for i, quad in enumerate(quads):
+        f = bm.faces.new([bm.verts.new(v) for v in quad])
+        f.material_index = i
+        for loop, (u, v) in zip(f.loops, ((0, 0), (1, 0), (1, 1), (0, 1))):
+            loop[uv].uv = (u, v)
+    bm.to_mesh(out)
+    bm.free()
+    for i, img in enumerate(images):
+        mat = bpy.data.materials.new(f"Billboard: {key} {('front', 'side')[i]}")
+        mat.use_nodes = True
+        bsdf = principled(mat)
+        t = mat.node_tree.nodes.new("ShaderNodeTexImage")
+        t.image = img
+        mat.node_tree.links.new(t.outputs["Color"], bsdf.inputs["Base Color"])
+        mat.node_tree.links.new(t.outputs["Alpha"], bsdf.inputs["Alpha"])
+        bsdf.inputs["Roughness"].default_value = 1.0
+        out.materials.append(mat)
+    ob = bpy.data.objects.new("billboard", out)
+    col.objects.link(ob)
+    return ob
+
+
 def export_plants(col):
     veg = bpy.data.collections.get("Dress: vegetation")
     if not veg:
@@ -290,17 +390,26 @@ def export_plants(col):
     for key in variants:
         src_col = bpy.data.collections[f"Dress source: {key}"]
         src_ob = next(o for o in src_col.objects if o.type == "MESH")
-        lod0, lod1 = PLANT_LODS.get(roles[key], (8_000, 1_500))
-        a, fa = decimated(src_ob, lod0, f"{key}|lod0", col, src_col.instance_offset)
-        b, fb = decimated(src_ob, lod1, f"{key}|lod1", col, src_col.instance_offset)
-        objs += [a, b]
-        faces[key] = [fa, fb]
+        levels, _ = PLANT_LODS.get(roles[key], ((8_000, 1_500), (50.0,)))
+        faces[key] = []
+        for i, level in enumerate(levels):
+            if level == "billboard":
+                ob = make_billboard(src_ob, key, col, src_col.instance_offset)
+                ob.name = f"{key}|lod{i}"
+                faces[key].append(2)
+            else:
+                ob, n = decimated(src_ob, level, f"{key}|lod{i}", col, src_col.instance_offset)
+                faces[key].append(n)
+            objs.append(ob)
     export_selection(objs, os.path.join(OUT_WORLD, "plants.gltf"), export_format="GLTF_SEPARATE",
                      export_texture_dir="", export_image_format="AUTO", **DRACO)  # fmt: skip
     return {
         "file": "plants.gltf",
-        "lodDistance": LOD_DISTANCE,
-        "variants": {k: {"role": roles[k], "faces": faces[k], "instances": v} for k, v in variants.items()},
+        "variants": {
+            k: {"role": roles[k], "faces": faces[k], "lodDistances": list(PLANT_LODS.get(roles[k], (0, (50.0,)))[1]),
+                "instances": v}
+            for k, v in variants.items()
+        },  # fmt: skip
     }
 
 
@@ -319,6 +428,14 @@ def export_collision(col, part_objs):
                 bm.faces.new([verts[i] for i in poly.vertices])
             except ValueError:
                 pass  # duplicate face
+    # Invisible walls along every shoreline (ponds, pools, lakes).
+    shores = [it["polygon"] for z in LAYOUT["zones"] for it in z["items"] if it["type"] == "water"] + SITE["water"]
+    for poly in shores:
+        ring = [bm.verts.new((x, y, -0.6)) for x, y in poly] + [bm.verts.new((x, y, 1.2)) for x, y in poly]
+        n = len(poly)
+        for i in range(n):
+            j = (i + 1) % n
+            bm.faces.new((ring[i], ring[j], ring[n + j], ring[n + i]))
     # Tree trunks and boulders as simple boxes.
     veg = bpy.data.collections.get("Dress: vegetation")
     for inst in veg.objects if veg else []:
@@ -704,10 +821,11 @@ def export():
             if me and me.users == 0:
                 bpy.data.meshes.remove(me)
         bpy.data.collections.remove(col)
-        for m in [m for m in bpy.data.materials if m.name.startswith("Web: ")]:
+        for m in [m for m in bpy.data.materials if m.name.startswith(("Web: ", "Billboard: "))]:
             bpy.data.materials.remove(m)
         bpy.data.orphans_purge(do_recursive=True)
 
+    shutil.rmtree(BILLBOARD_TMP, ignore_errors=True)
     shrink_textures()
     files = sorted(os.listdir(OUT_WORLD))
     sizes = {f: os.path.getsize(os.path.join(OUT_WORLD, f)) for f in files}

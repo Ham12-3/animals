@@ -13,15 +13,27 @@ const LOD_INTERVAL = 0.4; // seconds between plant level-of-detail updates
 const SUN_INTENSITY = 3.0;
 const FOG = { color: new THREE.Color(0.74, 0.81, 0.88), near: 350, far: 2600 };
 /** Beyond this, small plants are a few pixels: not drawn at all (trees always are). */
-const CULL_DISTANCE: Record<string, number> = { shrub: 150, rock: 150, bush: 260, tree: Infinity };
+const CULL_DISTANCE: Record<string, number> = { shrub: 130, rock: 150, bush: 220, tree: Infinity };
 
 interface PlantSet {
-  lod0: THREE.InstancedMesh[];
-  lod1: THREE.InstancedMesh[];
+  /** Instanced meshes per level of detail (one per primitive). */
+  levels: THREE.InstancedMesh[][];
   matrices: THREE.Matrix4[];
   xz: Float32Array;
-  lodDistanceSq: number;
+  /** Squared hand-over distances between levels. */
+  lodDistanceSq: number[];
   cullDistanceSq: number;
+}
+
+/** Billboards are pre-lit renders of the plant: show them as they are, cut out. */
+function billboardMaterial(m: THREE.MeshStandardMaterial) {
+  return new THREE.MeshBasicMaterial({
+    name: m.name,
+    map: m.map,
+    alphaTest: 0.5,
+    side: THREE.DoubleSide,
+    toneMapped: false,
+  });
 }
 
 /** Plant leaves are alpha cards: cut out (not blended) so they sort and cast shadows. */
@@ -51,7 +63,13 @@ function prepareStatic(root: THREE.Object3D, manifest: WorldManifest, doubleSide
         m.polygonOffsetUnits = -layer * 2;
         o.castShadow = false;
       }
-      if (m.name.endsWith("Blockout: mesh")) {
+      if (/water$/.test(m.name)) {
+        // Graded water (vertex colour + alpha): see the bank through the shallows.
+        m.transparent = true;
+        m.depthWrite = false;
+        o.castShadow = false;
+        o.renderOrder = 1;
+      } else if (m.name.endsWith("Blockout: mesh")) {
         m.transparent = true;
         m.depthWrite = false;
         m.side = THREE.DoubleSide;
@@ -76,30 +94,32 @@ function buildPlants(root: THREE.Object3D, plants: NonNullable<WorldManifest["pl
       new THREE.Matrix4().compose(new THREE.Vector3(x, y, z), q.setFromAxisAngle(up, yaw).clone(), new THREE.Vector3(s, s, s)),
     );
     const xz = new Float32Array(variant.instances.flatMap(([x, , z]) => [x, z]));
-    const lod = (level: 0 | 1) => {
+    const lod = (level: number) => {
       const node = root.getObjectByName(`${name}|lod${level}`);
       const out: THREE.InstancedMesh[] = [];
       node?.traverse((o) => {
         if (!(o instanceof THREE.Mesh)) return;
         const geometry = (o.geometry as THREE.BufferGeometry).clone().applyMatrix4(o.matrixWorld);
-        const materials = Array.isArray(o.material) ? o.material : [o.material];
-        materials.forEach(prepareFoliage);
-        const im = new THREE.InstancedMesh(geometry, o.material, n);
+        const source = Array.isArray(o.material) ? o.material : [o.material];
+        const billboard = source.some((m) => m.name.startsWith("Billboard"));
+        const material = billboard
+          ? source.map((m) => billboardMaterial(m as THREE.MeshStandardMaterial))
+          : (source.forEach(prepareFoliage), o.material);
+        const im = new THREE.InstancedMesh(geometry, Array.isArray(o.material) || billboard ? material : o.material, n);
         im.count = 0;
         im.frustumCulled = false;
-        im.castShadow = level === 0; // far plants are outside the shadow range anyway
-        im.receiveShadow = true;
+        im.castShadow = level < 2 && !billboard; // the shadow range covers the two nearer levels
+        im.receiveShadow = !billboard;
         out.push(im);
         group.add(im);
       });
       return out;
     };
     sets.push({
-      lod0: lod(0),
-      lod1: lod(1),
+      levels: variant.faces.map((_, i) => lod(i)),
       matrices,
       xz,
-      lodDistanceSq: plants.lodDistance ** 2,
+      lodDistanceSq: variant.lodDistances.map((d) => d * d),
       cullDistanceSq: (CULL_DISTANCE[variant.role] ?? Infinity) ** 2,
     });
   }
@@ -108,29 +128,23 @@ function buildPlants(root: THREE.Object3D, plants: NonNullable<WorldManifest["pl
 
 function updateLods(sets: PlantSet[], eye: THREE.Vector3) {
   for (const s of sets) {
-    let n0 = 0;
-    let n1 = 0;
+    const counts = s.levels.map(() => 0);
     for (let i = 0; i < s.matrices.length; i++) {
       const dx = s.xz[2 * i] - eye.x;
       const dz = s.xz[2 * i + 1] - eye.z;
       const d2 = dx * dx + dz * dz;
       if (d2 > s.cullDistanceSq) continue;
-      if (d2 < s.lodDistanceSq) {
-        for (const m of s.lod0) m.setMatrixAt(n0, s.matrices[i]);
-        n0++;
-      } else {
-        for (const m of s.lod1) m.setMatrixAt(n1, s.matrices[i]);
-        n1++;
+      let level = s.lodDistanceSq.findIndex((limit) => d2 < limit);
+      if (level < 0) level = s.levels.length - 1;
+      for (const m of s.levels[level]) m.setMatrixAt(counts[level], s.matrices[i]);
+      counts[level]++;
+    }
+    s.levels.forEach((meshes, level) => {
+      for (const m of meshes) {
+        m.count = counts[level];
+        m.instanceMatrix.needsUpdate = true;
       }
-    }
-    for (const m of s.lod0) {
-      m.count = n0;
-      m.instanceMatrix.needsUpdate = true;
-    }
-    for (const m of s.lod1) {
-      m.count = n1;
-      m.instanceMatrix.needsUpdate = true;
-    }
+    });
   }
 }
 

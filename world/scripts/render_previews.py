@@ -10,13 +10,17 @@ hidden for eye-level cameras.
 """
 
 import os
+import sys
 
 import bpy
 
 REPO = os.environ.get("VANTARA_REPO", r"C:\Users\mobol\Downloads\animals")
 OUT = os.path.join(REPO, "world", "renders")
-STEP = globals().get("STEP", "preview")
-CAMERAS = globals().get("CAMERAS")  # optional list of camera names (without "Cam: ")
+# From the MCP socket: set STEP / CAMERAS before exec. Headless:
+#   blender -b world/vantara_world.blend -P world/scripts/render_previews.py -- step5 "Aerial close,Dress woodland"
+ARGS = sys.argv[sys.argv.index("--") + 1 :] if "--" in sys.argv else []
+STEP = globals().get("STEP") or (ARGS[0] if ARGS else "preview")
+CAMERAS = globals().get("CAMERAS") or (ARGS[1].split(",") if len(ARGS) > 1 else None)  # names without "Cam: "
 
 
 def render_previews():

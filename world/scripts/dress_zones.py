@@ -11,11 +11,16 @@ collections and re-skins the blockout materials:
   use CC0 Poly Haven textures from world/assets/polyhaven/ when present, with
   large-scale colour variation so tiling doesn't show; procedural fallback
   otherwise
-- water shader for ponds and pools, wire-mesh fences
+- ponds, lakes and the hydrotherapy pool as real basins: a hole in every
+  ground layer, sloped wet banks and a bed, and see-through water that is
+  clear and light at the edges and dark in the middle; the pool has walls,
+  a floor and an elephant ramp
+- wire-mesh fences
 - building detail: windows per storey, doors, parapets, rooftop plant,
   hospital entrance canopy
-- trees, shrubs, grass and rocks scattered (seeded) where the layout leaves
-  room, if the Poly Haven models are downloaded
+- trees, shrubs and rocks scattered (seeded) where the layout leaves room, if
+  the Poly Haven models are downloaded: a dense woodland with understory,
+  avenues along the internal roads, shade in every yard, planted shores
 - the CC0 placeholder animals (web/public/models) placed in their zones
 """
 
@@ -28,6 +33,7 @@ import random
 import bmesh
 import bpy
 from mathutils import Vector
+from mathutils.geometry import tessellate_polygon
 
 REPO = os.environ.get("VANTARA_REPO", r"C:\Users\mobol\Downloads\animals")
 WORLD = os.path.join(REPO, "world")
@@ -69,8 +75,22 @@ PLANTS = {
     "boulder_01": ("rock", (0.7, 1.4)),
     "namaqualand_boulder_02": ("rock", (0.6, 1.2)),
 }
-# Meshes above this many faces get a Decimate modifier (renders hundreds of instances).
-MAX_FACES = 200_000
+# Faces per instanced model in the Blender scene, by role (Decimate modifier above that).
+# ~2,600 plant instances must fit the laptop GPU: about 65M triangles in all. At
+# 120k per tree and full-detail bushes (~120M) EEVEE ran out of memory and rendered
+# empty frames until Blender was restarted.
+MAX_FACES = {"tree": 60_000, "bush": 20_000, "shrub": 8_000, "rock": 15_000}
+
+# Water bodies: level below the ground, bed depth, bank width (m), shallow/deep colour and opacity.
+WATER = {
+    "pond": dict(drop=0.3, depth=1.6, bank=3.5, shallow=(0.30, 0.27, 0.16, 0.45), deep=(0.05, 0.08, 0.05, 0.93)),
+    "bathing": dict(drop=0.3, depth=2.2, bank=6.0, shallow=(0.32, 0.28, 0.17, 0.4), deep=(0.06, 0.08, 0.05, 0.94)),
+    "mud": dict(drop=0.12, depth=0.45, bank=2.5, shallow=(0.17, 0.12, 0.08, 1.0), deep=(0.13, 0.09, 0.06, 1.0)),
+    "lake": dict(drop=0.35, depth=3.0, bank=8.0, shallow=(0.26, 0.27, 0.18, 0.5), deep=(0.02, 0.06, 0.06, 0.95)),
+}
+POOL = dict(drop=0.25, depth=2.0, ramp=12.0, water=(0.30, 0.62, 0.66, 0.5))
+SURFACE_Z = {"grass_wild": 0.135, "sand": 0.14, "asphalt": 0.145, "paving": 0.15}  # as in build_zones.py
+SITE_Z, GROUND_Z = 0.12, 0.0  # Vantara grounds and the surrounding ground (build_site_base.py)
 
 # (animal, x, y, heading deg; 0 = facing north)
 ANIMAL_SPOTS = [
@@ -581,9 +601,9 @@ def plant_sources(parent):
                 ob.parent = None
                 ob.matrix_world = world
             faces = len(ob.data.polygons)
-            if faces > MAX_FACES:
+            if faces > MAX_FACES[role]:
                 mod = ob.modifiers.new("Decimate", "DECIMATE")
-                mod.ratio = MAX_FACES / faces
+                mod.ratio = MAX_FACES[role] / faces
             variant = new_collection(f"Dress source: {ob.name}", sources)
             for o in [ob] + [c for c in objs if c.parent == ob]:
                 tmp.objects.unlink(o)
@@ -603,8 +623,11 @@ def plant_vegetation(parent):
     col = new_collection("Dress: vegetation", parent)
     rng = random.Random(SEED)
     built = footprints()
-    roads = [(r["points"], r["width"] / 2 + 3.0) for r in SITE["roads"]]
     outline = SITE["outline"]
+    ox = [p[0] for p in outline]
+    oy = [p[1] for p in outline]
+    near_site = lambda q: min(ox) - 60 < q[0] < max(ox) + 60 and min(oy) - 60 < q[1] < max(oy) + 60  # noqa: E731
+    roads = [(r["points"], r["width"] / 2 + 3.0) for r in SITE["roads"] if any(near_site(q) for q in r["points"])]
     zone_areas = {z["id"]: z["area"] for z in LAYOUT["zones"]}
     fences = [(it["points"], 2.5) for z in LAYOUT["zones"] for it in z["items"] if it["type"] == "fence"]
 
@@ -624,12 +647,17 @@ def plant_vegetation(parent):
         return False
 
     counts = {}
+    planted = {}
 
-    def put(role, pts):
+    def put(role, pts, z=0.12):
         for x, y in pts:
             src, scale = rng.choice(srcs[role])
-            instance(col, src, f"{role}", x, y, 0.12, rng.uniform(0, 360), rng.uniform(*scale))
+            instance(col, src, f"{role}", x, y, z, rng.uniform(0, 360), rng.uniform(*scale))
         counts[role] = counts.get(role, 0) + len(pts)
+        planted.setdefault(role, []).extend(pts)
+
+    def clear_of(role, p, d):
+        return all((p[0] - q[0]) ** 2 + (p[1] - q[1]) ** 2 >= d * d for q in planted.get(role, []))
 
     def has(role):
         return role in srcs
@@ -645,26 +673,330 @@ def plant_vegetation(parent):
     def free(p):
         return not blocked(p) and not in_zone(p)
 
+    woods = zone_areas["woodland"]
+
+    def avenue_points():
+        """Both sides of the internal roads, every 16 m, 4 m back from the edge."""
+        pts = []
+        for line, clear in roads:
+            off = clear + 1.0
+            for a, b in zip(line, line[1:]):
+                a, b = Vector(a), Vector(b)
+                length = (b - a).length
+                if length < 1:
+                    continue
+                d = (b - a) / length
+                side = Vector((-d.y, d.x))
+                t = 8.0
+                while t <= length:
+                    for sgn in (-1, 1):
+                        c = a + d * t + side * sgn * off
+                        q = (c.x, c.y)
+                        if not blocked(q, 1.0) and clear_of("tree", q, 9) and all(math.dist(q, o) > 10 for o in pts):
+                            pts.append(q)
+                    t += 16.0
+        return pts
+
     if has("tree"):
-        # Woodland wedge: dense canopy; grounds between zones: scattered shade trees.
-        put("tree", scatter_points(rng, zone_areas["woodland"], 12, 140, blocked))
-        put("tree", scatter_points(rng, outline, 24, 110, lambda p: not free(p)))
+        # Woodland wedge: a closed canopy, trees 7-8 m apart.
+        put("tree", scatter_points(rng, woods, 7.5, 420, blocked))
+        # Avenues along the internal roads.
+        put("tree", avenue_points())
+        # Grounds between zones: shade trees, clear of the avenues.
+        put("tree", scatter_points(rng, outline, 15, 260, lambda p: not free(p) or not clear_of("tree", p, 9)))
         # Shade inside the elephant paddock, each big-cat enclosure and herbivore paddock.
         for name, poly in each_surface(lambda n, m: "enclosure" in n or "paddock" in n):
-            put("tree", scatter_points(rng, poly, 14, 6 if "elephant" in name else 2, lambda p: blocked(p, 2.0)))
+            k = 10 if "elephant" in name else 4 if "paddock" in name else 3
+            put("tree", scatter_points(rng, poly, 12, k, lambda p: blocked(p, 2.0)))
     if has("bush"):
-        put("bush", scatter_points(rng, zone_areas["woodland"], 6, 160, blocked))
-        put("bush", scatter_points(rng, outline, 12, 160, lambda p: not free(p)))
+        # Woodland understory between the trunks.
+        put("bush", scatter_points(rng, woods, 4.5, 380, lambda p: blocked(p) or not clear_of("tree", p, 2.5)))
+        put("bush", scatter_points(rng, outline, 11, 200, lambda p: not free(p)))
         for name, poly in each_surface(lambda n, m: m == "grass_wild"):
-            put("bush", scatter_points(rng, poly, 6, 3, lambda p: blocked(p, 1.0)))
+            put("bush", scatter_points(rng, poly, 6, 4, lambda p: blocked(p, 1.0)))
     if has("shrub"):
+        put("shrub", scatter_points(rng, woods, 3.2, 450, lambda p: blocked(p, 0.0, False) or not clear_of("tree", p, 1.5)))
         put("shrub", scatter_points(rng, outline, 6, 450, lambda p: not free(p)))
         for name, poly in each_surface(lambda n, m: m == "grass_wild"):
             put("shrub", scatter_points(rng, poly, 4, 8, lambda p: blocked(p, 1.0)))
     if has("rock"):
         for name, poly in each_surface(lambda n, m: "enclosure" in n or "elephant paddock" in n):
             put("rock", scatter_points(rng, poly, 8, 6 if "elephant" in name else 3, lambda p: blocked(p, 1.0)))
+
+    # Shores: rocks on the upper bank, a planted ring outside, a couple of trees.
+    # The bathing pond keeps its south side open: elephants walk in there.
+    solid = [it["footprint"] for z in LAYOUT["zones"] for it in z["items"] if it["type"] in ("building", "shed")]
+    fence_lines = [it["points"] for z in LAYOUT["zones"] for it in z["items"] if it["type"] == "fence"]
+
+    def shore_ok(q):
+        return (inside(q, outline) and poly_dist(q, outline) > 3 and not any(inside(q, f) for f in solid)
+                and all(poly_dist(q, f) > 1.5 for f in fence_lines))  # fmt: skip
+
+    for body in water_bodies():
+        if body["kind"] in ("pool", "lake"):
+            continue
+        poly = body["poly"]
+        cy = sum(p[1] for p in poly) / len(poly)
+        open_side = (lambda q: q[1] < cy) if body["kind"] == "bathing" else (lambda q: False)
+        if has("rock"):
+            edge = [q for q in offset_polygon(poly, 0.7) if not open_side(q)]
+            put("rock", [q for q in rng.sample(edge, min(len(edge), 5)) if shore_ok(q)], z=body["z"] - 0.15)
+        ring = [q for q in offset_polygon(poly, -2.8) if shore_ok(q) and not open_side(q)]
+        if has("shrub"):
+            put("shrub", [q for q in ring if rng.random() < 0.7])
+        if has("bush"):
+            put("bush", [q for q in offset_polygon(poly, -5.0)[::3] if shore_ok(q) and not open_side(q)])
+        if has("tree"):
+            far = [q for q in offset_polygon(poly, -9.0) if shore_ok(q) and not open_side(q) and clear_of("tree", q, 8)]
+            put("tree", rng.sample(far, min(len(far), 2)))
     return counts
+
+
+# ---------------------------------------------------------------- water
+
+
+def ccw(poly):
+    area = sum(x0 * y1 - x1 * y0 for (x0, y0), (x1, y1) in zip(poly, poly[1:] + poly[:1]))
+    return poly if area > 0 else list(reversed(poly))
+
+
+def offset_polygon(poly, d):
+    """Shrink a counter-clockwise polygon by d metres (mitred corners, same vertex count)."""
+    pts = [Vector(p) for p in poly]
+    n = len(pts)
+    out = []
+    for i in range(n):
+        a, b, c = pts[i - 1], pts[i], pts[(i + 1) % n]
+        e1, e2 = (b - a).normalized(), (c - b).normalized()
+        n1, n2 = Vector((-e1.y, e1.x)), Vector((-e2.y, e2.x))  # inward (left) normals
+        m = n1 + n2
+        m = n1 if m.length < 1e-6 else m.normalized()
+        out.append(b + m * (d / max(0.35, m.dot(n1))))
+    return [(p.x, p.y) for p in out]
+
+
+def half_width(poly):
+    xs = [p[0] for p in poly]
+    ys = [p[1] for p in poly]
+    return min(max(xs) - min(xs), max(ys) - min(ys)) / 2
+
+
+def water_bodies():
+    """Every pond, wallow, pool (layout) and lake (OSM), with the ground height around it."""
+    surfaces = [it for z in LAYOUT["zones"] for it in z["items"] if it["type"] == "surface"]
+    out = []
+    for z in LAYOUT["zones"]:
+        for it in z["items"]:
+            if it["type"] != "water":
+                continue
+            poly = ccw(it["polygon"])
+            c = (sum(p[0] for p in poly) / len(poly), sum(p[1] for p in poly) / len(poly))
+            under = [sf for sf in surfaces if inside(c, sf["polygon"]) and sf["name"] != "Pool deck"]
+            zg = max([SURFACE_Z.get(sf["material"], SITE_Z) for sf in under] + [SITE_Z])
+            if it["kind"] == "pool":
+                zg = SURFACE_Z["paving"]
+            kind = "pool" if it["kind"] == "pool" else "mud" if it["kind"] == "mud" else "bathing" if "bathing" in it["name"].lower() else "pond"
+            out.append({"name": it["name"], "kind": kind, "poly": poly, "z": zg})
+    for poly in SITE["water"]:
+        out.append({"name": "Lake", "kind": "lake", "poly": ccw(poly), "z": GROUND_Z})
+    return out
+
+
+def punch_holes(bodies):
+    """Cut each water body out of every horizontal ground face that contains it."""
+    skip = {"Sky, sun, cameras"}
+    polys = [b["poly"] for b in bodies]
+    punched = 0
+    for ob in bpy.data.objects:
+        if ob.type != "MESH" or any(c.name in skip or c.name.startswith("Dress") for c in ob.users_collection):
+            continue
+        bm = bmesh.new()
+        bm.from_mesh(ob.data)
+        changed = False
+        for f in list(bm.faces):
+            if abs(f.normal.z) < 0.99:
+                continue
+            outline = [(v.co.x, v.co.y) for v in f.verts]
+            holes = [w for w in polys if all(inside(p, outline) for p in w)]
+            if not holes:
+                continue
+            z = f.verts[0].co.z
+            loops = [[Vector((x, y, z)) for x, y in outline]] + [[Vector((x, y, z)) for x, y in h] for h in holes]
+            flat = [v for loop in loops for v in loop]
+            mat = f.material_index
+            bm.faces.remove(f)
+            verts = [bm.verts.new(v) for v in flat]
+            for tri in tessellate_polygon(loops):
+                try:
+                    nf = bm.faces.new([verts[i] for i in tri])
+                except ValueError:
+                    continue
+                nf.material_index = mat
+                nf.normal_update()
+                if nf.normal.z < 0:
+                    nf.normal_flip()
+            changed = True
+            punched += len(holes)
+        if changed:
+            bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=1e-4)
+            bm.to_mesh(ob.data)
+        bm.free()
+    return punched
+
+
+def remove_flat_water(bodies):
+    """The step-2 water was flat polygons on the ground: drop them (lakes from the OSM water mesh)."""
+    for ob in list(bpy.data.objects):
+        if ob.type == "MESH" and ob.name.split(": ")[-1] in ("pond", "pool", "mud"):
+            bpy.data.objects.remove(ob, do_unlink=True)
+    water = bpy.data.objects.get("Water")
+    if water:
+        lakes = [b["poly"] for b in bodies if b["kind"] == "lake"]
+        bm = bmesh.new()
+        bm.from_mesh(water.data)
+        doomed = [f for f in bm.faces if any(inside((f.calc_center_median().x, f.calc_center_median().y), l) for l in lakes)]
+        bmesh.ops.delete(bm, geom=doomed, context="FACES")
+        bm.to_mesh(water.data)
+        bm.free()
+
+
+def water_surface_material(name, roughness=0.04):
+    """Colour and opacity come from the mesh (vertex colours): shallow edges show the bank."""
+    mat = bpy.data.materials.get(name) or bpy.data.materials.new(name)
+    mat.use_nodes = True
+    nt = mat.node_tree
+    nt.nodes.clear()
+    out = node(nt, "ShaderNodeOutputMaterial", 700, 0)
+    bsdf = node(nt, "ShaderNodeBsdfPrincipled", 400, 0)
+    nt.links.new(bsdf.outputs["BSDF"], out.inputs["Surface"])
+    col = node(nt, "ShaderNodeVertexColor", 0, 100)
+    col.layer_name = "Col"
+    nt.links.new(col.outputs["Color"], bsdf.inputs["Base Color"])
+    nt.links.new(col.outputs["Alpha"], bsdf.inputs["Alpha"])
+    coord = node(nt, "ShaderNodeTexCoord", -600, -200)
+    ripples = node(nt, "ShaderNodeTexNoise", -400, -200)
+    ripples.inputs["Scale"].default_value = 1.2
+    ripples.inputs["Detail"].default_value = 6
+    nt.links.new(coord.outputs["Object"], ripples.inputs["Vector"])
+    bump = node(nt, "ShaderNodeBump", 100, -200)
+    bump.inputs["Strength"].default_value = 0.06
+    nt.links.new(ripples.outputs["Fac"], bump.inputs["Height"])
+    nt.links.new(bump.outputs["Normal"], bsdf.inputs["Normal"])
+    bsdf.inputs["Roughness"].default_value = roughness
+    bsdf.inputs["IOR"].default_value = 1.33
+    bsdf.inputs["Specular IOR Level"].default_value = 0.5
+    if hasattr(mat, "surface_render_method"):
+        mat.surface_render_method = "BLENDED"
+    mat["vantara_water"] = True
+    return mat
+
+
+def basin(bank_bm, water_bm, col_layer, body):
+    """Sloped bank from the shoreline down to a flat bed, and a water surface graded shallow -> deep."""
+    spec = WATER[body["kind"]]
+    poly, zg = body["poly"], body["z"]
+    bank = min(spec["bank"], half_width(poly) * 0.55)
+    zw, zb = zg - spec["drop"], zg - spec["depth"]
+    rings = [(poly, zg), (offset_polygon(poly, min(1.2, bank * 0.4)), zw - 0.08), (offset_polygon(poly, bank), zb)]
+    vs = [[bank_bm.verts.new((x, y, z)) for x, y in ring] for ring, z in rings]
+    n = len(poly)
+    for r in range(len(vs) - 1):
+        for i in range(n):
+            j = (i + 1) % n
+            bank_bm.faces.new((vs[r][i], vs[r][j], vs[r + 1][j], vs[r + 1][i]))
+    bed = vs[-1]
+    for tri in tessellate_polygon([[v.co for v in bed]]):
+        try:
+            bank_bm.faces.new([bed[i] for i in tri])
+        except ValueError:
+            pass
+    # Water: rings from the shore inwards, vertex colour/alpha from shallow to deep.
+    sh, dp = Vector(spec["shallow"]), Vector(spec["deep"])
+    wrings = [(offset_polygon(poly, 0.5), 0.0), (offset_polygon(poly, bank * 0.5), 0.6), (offset_polygon(poly, bank), 1.0)]
+    wv = []
+    for ring, t in wrings:
+        c = sh.lerp(dp, t)
+        row = []
+        for x, y in ring:
+            v = water_bm.verts.new((x, y, zw))
+            v[col_layer] = c
+            row.append(v)
+        wv.append(row)
+    for r in range(len(wv) - 1):
+        for i in range(n):
+            j = (i + 1) % n
+            water_bm.faces.new((wv[r][i], wv[r][j], wv[r + 1][j], wv[r + 1][i]))
+    for tri in tessellate_polygon([[v.co for v in wv[-1]]]):
+        try:
+            water_bm.faces.new([wv[-1][i] for i in tri])
+        except ValueError:
+            pass
+
+
+def pool_basin(shell_bm, water_bm, col_layer, body):
+    """Hydrotherapy pool: vertical walls, flat floor and a ramp up one short end for elephants."""
+    pts = [Vector(p) for p in body["poly"]]
+    a, b, c, d = pts
+    e1, e2 = b - a, d - a
+    long_axis, short_axis = (e1, e2) if e1.length >= e2.length else (e2, e1)
+    centre = (a + c) / 2
+    L, W = long_axis.length, short_axis.length
+    u, v = long_axis.normalized(), short_axis.normalized()
+    zg = body["z"]
+    zf, zw = zg - POOL["depth"], zg - POOL["drop"]
+
+    def at(s, t, z):
+        p = centre + u * s + v * t
+        return shell_bm.verts.new((p.x, p.y, z))
+
+    hl, hw = L / 2, W / 2
+    ramp_end = -hl + POOL["ramp"]
+    for t0, t1 in ((-hw, hw),):
+        # Walls (long sides follow the ramp profile; the deep end is full height).
+        for side in (-hw, hw):
+            prof = [(-hl, zg - 0.05), (ramp_end, zf), (hl, zf)]
+            for (s0, z0), (s1, z1) in zip(prof, prof[1:]):
+                shell_bm.faces.new((at(s0, side, zg), at(s1, side, zg), at(s1, side, z1), at(s0, side, z0)))
+        shell_bm.faces.new((at(hl, t0, zg), at(hl, t1, zg), at(hl, t1, zf), at(hl, t0, zf)))
+        # Ramp and floor.
+        shell_bm.faces.new((at(-hl, t0, zg - 0.05), at(ramp_end, t0, zf), at(ramp_end, t1, zf), at(-hl, t1, zg - 0.05)))
+        shell_bm.faces.new((at(ramp_end, t0, zf), at(hl, t0, zf), at(hl, t1, zf), at(ramp_end, t1, zf)))
+    corners = [centre + u * s + v * t for s, t in ((-hl, -hw), (hl, -hw), (hl, hw), (-hl, hw))]
+    verts = []
+    for p in corners:
+        w = water_bm.verts.new((p.x, p.y, zw))
+        w[col_layer] = Vector(POOL["water"])
+        verts.append(w)
+    water_bm.faces.new(verts)
+
+
+def shape_water(parent):
+    bodies = water_bodies()
+    remove_flat_water(bodies)
+    holes = punch_holes(bodies)
+    col = new_collection("Dress: water", parent)
+    bank_mat = bpy.data.materials.get("Dress: wet bank") or bpy.data.materials.new("Dress: wet bank")
+    reskin(bank_mat, ("brown_mud_02", 3.0, (0.22, 0.16, 0.11), 1.0, 0.75, -0.25))
+    shell_mat = flat_material("Dress: pool shell", (0.58, 0.72, 0.76), 0.35)
+    groups = {}
+    for body in bodies:
+        key = "mud" if body["kind"] == "mud" else "pool" if body["kind"] == "pool" else "lake" if body["kind"] == "lake" else "pond"
+        g = groups.setdefault(key, {"bank": bmesh.new(), "water": bmesh.new()})
+        layer = g["water"].verts.layers.float_color.get("Col") or g["water"].verts.layers.float_color.new("Col")
+        if body["kind"] == "pool":
+            pool_basin(g["bank"], g["water"], layer, body)
+        else:
+            basin(g["bank"], g["water"], layer, body)
+    for key, g in groups.items():
+        for bm in g.values():
+            bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+            for f in bm.faces:  # water and beds face up; banks face into the basin
+                if f.normal.z < -0.5:
+                    f.normal_flip()
+        link_mesh(col, f"Dress: {key} basin", g["bank"], shell_mat if key == "pool" else bank_mat)
+        link_mesh(col, f"Dress: {key} water", g["water"],
+                  water_surface_material(f"Dress: {key} water", 0.25 if key == "mud" else 0.04))  # fmt: skip
+    return {"bodies": len(bodies), "holes": holes}
 
 
 def dress_cameras():
@@ -682,6 +1014,9 @@ def dress_cameras():
 
     cam("Cam: Dress elephant paddock", (-300, -100, 4.5), (-250, -45, 1.5), 30)
     cam("Cam: Dress tiger enclosure", (206, -100, 2.2), (186, -100, 0.6), 30)
+    cam("Cam: Dress bathing pond", (-150, -80, 2.6), (-162, -45, -0.6), 28)
+    cam("Cam: Dress hydro pool", (-86, 27, 2.0), (-55, 43, -1.2), 24)
+    cam("Cam: Dress woodland", (-420, 10, 1.7), (-500, 80, 4.0), 26)
 
 
 def grade():
@@ -706,6 +1041,7 @@ def dress():
     remove_previous()
     root = new_collection("Dress")
     textures = reskin_all()
+    water = shape_water(root)
     details = building_details(root)
     animals = place_animals(root)
     plants = plant_vegetation(root)
@@ -714,7 +1050,7 @@ def dress():
     scene.frame_set(1)
     bpy.ops.wm.save_mainfile()
     print("textures:", textures)
-    print("building detail:", details, "| animals:", animals, "| plants:", plants or "none (models not downloaded)")
+    print("water:", water, "| building detail:", details, "| animals:", animals, "| plants:", plants or "none (models not downloaded)")
 
 
 dress()

@@ -7,7 +7,10 @@ type Vec3 = [number, number, number];
 /** One plant model (Poly Haven, CC0) and where it grows: [x, y, z, yaw, scale] in metres / radians. */
 export interface PlantVariant {
   role: "tree" | "bush" | "shrub" | "rock";
-  faces: [number, number];
+  /** Faces per level of detail (a billboard level has 2). */
+  faces: number[];
+  /** Distance (m) where level i hands over to level i + 1. */
+  lodDistances: number[];
   instances: [number, number, number, number, number][];
 }
 
@@ -85,8 +88,8 @@ export interface WorldManifest {
   groundY: number;
   /** Static scene parts (glTF with shared external textures), relative to the manifest. */
   parts: { id: string; file: string }[];
-  /** Plant models: nodes "<variant>|lod0" / "<variant>|lod1"; LOD1 beyond lodDistance. */
-  plants: { file: string; lodDistance: number; variants: Record<string, PlantVariant> } | null;
+  /** Plant models: nodes "<variant>|lod<i>", the last level being a billboard for trees. */
+  plants: { file: string; variants: Record<string, PlantVariant> } | null;
   collision: string;
   /** Polygon-offset order for coplanar ground layers, by material name (higher draws on top). */
   depthLayers: Record<string, number>;
