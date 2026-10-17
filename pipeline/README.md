@@ -160,3 +160,32 @@ Check a published zone locally: `pnpm dev` in `web/`, then open
 `http://localhost:3000/dev/spark?zone=<zone>`. It loads straight from
 `pipeline/work` through a development-only route, so nothing private is copied
 into the web app.
+
+## Phase 7: animals
+
+Models live in Blender (driven through the MCP-for-Blender add-on socket, see
+`vantara_pipeline/blender_bridge.py`), one collection per animal named
+`Animal: <name>`. Then:
+
+```bash
+uv run python -m vantara_pipeline.blender_bridge execute_code \
+  --code "exec(open('blender/prepare_animals.py', encoding='utf-8').read())"
+```
+
+`blender/prepare_animals.py` poses each model at rest, scales it to real height,
+centres it with feet on the ground facing glTF +Z, gives untextured meshes a
+realistic flat albedo, and exports `web/public/models/<name>.glb` (modifiers
+applied, skin + every action as a clip). It writes
+`web/src/content/animals.json` (sizes, clips, idle/walk clip names, credits).
+Edit the `ANIMALS` table at the top to add or swap models.
+
+Current models are CC0 low-poly placeholders (see `web/public/models/CREDITS.md`):
+only the elephant has clips and none has a walk cycle, so the explorer adds a
+procedural gait. Swap in the realistic CC-BY set by importing them into the
+same collections and re-running the script.
+
+`publish-splat` also estimates each zone's **lighting** for these meshes:
+opaque flat splats give surface normals and colours, a first-order spherical
+harmonic fit gives ambient + sun (direction and colour), written to
+`<zone>.json` as `lighting` (irradiance, linear RGB, assuming 35% average
+albedo; the sun is kept above the horizon).

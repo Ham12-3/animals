@@ -57,3 +57,17 @@ copy the point under the crosshair: aim at a spot and paste the position into
 
 `/dev/spark` renders Spark's public sample splat (renderer check);
 `/dev/spark?zone=<id>` renders a locally published zone.
+
+## Animals
+
+`src/content/animal-placements.json` places animals per zone: waypoints `[x, z]`
+on the ground; each animal idles at a waypoint (its idle clip, sometimes an
+extra such as eating), turns, and walks to the next, feet snapped to the zone's
+floor. Locally published zones can carry their own `animals.json` beside their
+files.
+
+Models come from `web/public/models` in development, `NEXT_PUBLIC_MODEL_BASE`
+(CDN) in production; `src/content/animals.json` is written by the Blender
+script. To match the splats, meshes are lit by the zone's fitted ambient + sun,
+the canvas renders without tone mapping (as Spark shows splat colours), and
+each animal gets a soft contact shadow pushed away from the sun.

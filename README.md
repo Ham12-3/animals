@@ -29,7 +29,7 @@ Vercel Blob.
 | 4 | Splat training (Brush, Colab fallback) | tooling done, waiting for footage |
 | 5 | Cleanup, alignment, SPZ + mobile LOD | done (tested on private sample) |
 | 6 | Web explorer | done (tested on private sample) |
-| 7 | Animated animals | |
+| 7 | Animated animals | done with CC0 placeholders (realistic models to swap in) |
 | 8 | Polish and deploy | |
 
 ## Quick start

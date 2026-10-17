@@ -9,7 +9,8 @@ writes work/<zone>/publish/:
     <zone>.mobile.spz     mobile LOD: no view-dependent colour, fewer splats (15 MB)
     <zone>.collision.glb  invisible collision mesh (20 cm voxels), same frame
     <zone>.json           metadata for the web app: units, spawn point, bounds,
-                          camera path, north, file sizes
+                          camera path, north, file sizes, and lighting
+                          (ambient + sun fitted to the splats, for meshes)
     preview_*.webp        renders before/after cleanup, for review
     publish_report.json   what each step removed and why
 
@@ -39,7 +40,11 @@ import pycolmap
 
 from . import PIPELINE_DIR, WORK_DIR, ZONES_FILE
 from .glb import rotate_vertices
+from .lighting import estimate_lighting
 from .splat_ply import read_ply, select, sh_degree, transform, write_ply
+
+# Written by hand next to a zone's published files; kept when re-publishing.
+HAND_AUTHORED = ("hotspots.json", "animals.json")
 
 SPLAT_TRANSFORM = PIPELINE_DIR / "node_modules" / ".bin" / ("splat-transform.cmd" if os.name == "nt" else "splat-transform")
 
@@ -243,10 +248,10 @@ def publish(zone_dir: Path, eye_height: float, scale: float | None, north_deg: f
         raise SystemExit(f"no splat at {ply_in}; run train-splat first (or put the Colab PLY there)")
     out = zone_dir / "publish"
     # Hand-authored files survive a re-publish; everything else is rebuilt.
-    keep = {f: (out / f).read_bytes() for f in ("hotspots.json",) if (out / f).is_file()}
+    preserved = {f: (out / f).read_bytes() for f in HAND_AUTHORED if (out / f).is_file()}
     shutil.rmtree(out, ignore_errors=True)
     out.mkdir(parents=True)
-    for f, data in keep.items():
+    for f, data in preserved.items():
         (out / f).write_bytes(data)
     tmp = out / "_tmp"
     tmp.mkdir(parents=True)
@@ -286,6 +291,11 @@ def publish(zone_dir: Path, eye_height: float, scale: float | None, north_deg: f
     keep &= np.all((pos >= lo) & (pos <= hi), 1)
     report.stages["after_crop"] = int(keep.sum())
     splats = select(splats, keep)
+
+    # Lighting for meshes placed in the zone (animals), fitted to the splats.
+    lighting = estimate_lighting(splats, cams)
+    if not lighting["estimated"]:
+        report.warnings.append(f"Lighting: {lighting.get('note')}; using a neutral default.")
 
     aligned = tmp / "aligned.ply"
     write_ply(aligned, splats, order, ["Vantara 3D: aligned, metres, +Y up"])
@@ -331,6 +341,7 @@ def publish(zone_dir: Path, eye_height: float, scale: float | None, north_deg: f
         "cameraPath": np.round(cams[:: max(1, len(cams) // 60)], 3).tolist(),
         "fovY": round(fov_y, 1),
         "north": {"deg": north_deg, "known": north_deg is not None},
+        "lighting": lighting,
     }
     (out / f"{zone}.json").write_text(json.dumps(meta, indent=2))
     if north_deg is None:

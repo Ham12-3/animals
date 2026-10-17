@@ -25,7 +25,22 @@ export interface ZoneMeta {
   cameraPath: Vec3[];
   fovY: number;
   north: { deg: number | null; known: boolean };
+  /** Ambient + sun fitted to the splats (irradiance, linear RGB); lights meshes such as animals. */
+  lighting?: ZoneLighting;
 }
+
+export interface ZoneLighting {
+  ambient: Vec3;
+  sun: { direction: Vec3; color: Vec3 };
+  estimated: boolean;
+}
+
+/** Neutral daylight for zones published before lighting estimates existed. */
+export const DEFAULT_LIGHTING: ZoneLighting = {
+  ambient: [0.9, 0.9, 0.9],
+  sun: { direction: [0.3, 0.9, 0.3], color: [1.6, 1.55, 1.45] },
+  estimated: false,
+};
 
 export async function fetchZoneMeta(zone: string, signal?: AbortSignal): Promise<ZoneMeta> {
   const res = await fetch(assetUrl(zone, `${zone}.json`), { signal });

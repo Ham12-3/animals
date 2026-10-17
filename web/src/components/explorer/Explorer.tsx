@@ -2,12 +2,14 @@
 
 import { PerformanceMonitor, Stats } from "@react-three/drei";
 import { Canvas, useThree } from "@react-three/fiber";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import * as THREE from "three";
-import { assetUrl, fetchWithProgress, fetchZoneMeta, type ZoneMeta } from "@/lib/assets";
+import { type AnimalPlacement, loadPlacements } from "@/lib/animals";
+import { assetUrl, DEFAULT_LIGHTING, fetchWithProgress, fetchZoneMeta, type ZoneMeta } from "@/lib/assets";
 import { detectQuality, isTouchDevice, type Quality } from "@/lib/device";
 import { type Hotspot, loadHotspots } from "@/lib/hotspots";
 import { zones as configuredZones, zonesFile } from "@/lib/zones";
+import Animals from "./Animals";
 import { CollisionWorld } from "./collision";
 import Hotspots from "./Hotspots";
 import { bindKeyboard, createInput } from "./input";
@@ -27,6 +29,7 @@ interface Loaded {
   meta: ZoneMeta;
   world: CollisionWorld | null;
   hotspots: Hotspot[];
+  animals: AnimalPlacement[];
 }
 
 function publicZones(): ZoneEntry[] {
@@ -55,6 +58,9 @@ function CameraFov({ fov }: { fov: number }) {
 /** Dev helper: H logs the collision point under the crosshair, for hotspots.json. */
 function HotspotPicker({ world, onPick }: { world: CollisionWorld | null; onPick: (p: THREE.Vector3) => void }) {
   const get = useThree((s) => s.get);
+  useEffect(() => {
+    Object.assign(window, { __r3f: get }); // debug: inspect renderer, scene, camera
+  }, [get]);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.code !== "KeyH" || !world) return;
@@ -123,7 +129,7 @@ export default function Explorer({ initialZone, debug }: { initialZone?: string;
     (async () => {
       try {
         const meta = await fetchZoneMeta(zoneId, ac.signal);
-        const [world, hotspots] = await Promise.all([
+        const [world, hotspots, animals] = await Promise.all([
           meta.files.collision
             ? fetchWithProgress(
                 assetUrl(zoneId, meta.files.collision),
@@ -132,12 +138,13 @@ export default function Explorer({ initialZone, debug }: { initialZone?: string;
               ).then((buf) => CollisionWorld.fromGlb(buf))
             : Promise.resolve(null),
           loadHotspots(zoneId),
+          loadPlacements(zoneId),
         ]);
         if (ac.signal.aborted) {
           world?.dispose();
           return;
         }
-        setLoaded({ key: k, meta, world, hotspots });
+        setLoaded({ key: k, meta, world, hotspots, animals });
       } catch (e) {
         if (!ac.signal.aborted) setError({ key: k, message: e instanceof Error ? e.message : String(e) });
       }
@@ -221,7 +228,10 @@ export default function Explorer({ initialZone, debug }: { initialZone?: string;
 
   return (
     <div className="relative h-full w-full select-none">
+      {/* flat = no tone mapping: Spark shows splat colours as stored, so meshes
+          must not be tone-mapped either or animals won't match the scene. */}
       <Canvas
+        flat
         dpr={dpr}
         gl={{ antialias: false, powerPreference: "high-performance" }}
         camera={{ fov: 60, near: 0.05, far: 1000, position: [0, 1.6, 0] }}
@@ -262,6 +272,16 @@ export default function Explorer({ initialZone, debug }: { initialZone?: string;
               />
             )}
             {ready && <Hotspots hotspots={current.hotspots} world={current.world} onOpen={setOpenHotspot} />}
+            {ready && current.animals.length > 0 && (
+              <Suspense fallback={null}>
+                <Animals
+                  placements={current.animals}
+                  world={current.world}
+                  groundY={current.meta.groundY}
+                  lighting={current.meta.lighting ?? DEFAULT_LIGHTING}
+                />
+              </Suspense>
+            )}
             {debug && <HotspotPicker world={current.world} onPick={onPickPoint} />}
           </>
         )}

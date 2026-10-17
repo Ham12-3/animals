@@ -1,0 +1,71 @@
+{
+  "$comment": "Written by pipeline/blender/prepare_animals.py. Sizes in metres; models face +Z.",
+  "animals": {
+    "elephant": {
+      "file": "elephant.glb",
+      "heightM": 3.2,
+      "lengthM": 5.79,
+      "widthM": 2.14,
+      "walkSpeed": 1.1,
+      "clips": [
+        {
+          "name": "Angry",
+          "seconds": 10.83
+        },
+        {
+          "name": "Eating",
+          "seconds": 14.21
+        },
+        {
+          "name": "GettingUp",
+          "seconds": 5.83
+        },
+        {
+          "name": "Idle",
+          "seconds": 4.17
+        },
+        {
+          "name": "Sitting",
+          "seconds": 5.83
+        }
+      ],
+      "idleClip": "Idle",
+      "walkClip": null,
+      "extraClips": [
+        "Eating",
+        "Angry"
+      ],
+      "placeholder": true,
+      "credit": "low poly elephant by syncopika (CC0), opengameart.org/node/92420",
+      "bytes": 395496
+    },
+    "tiger": {
+      "file": "tiger.glb",
+      "heightM": 1.05,
+      "lengthM": 2.27,
+      "widthM": 0.73,
+      "walkSpeed": 1.2,
+      "clips": [],
+      "idleClip": null,
+      "walkClip": null,
+      "extraClips": [],
+      "placeholder": true,
+      "credit": "Tiger by Micket (CC0), opengameart.org/content/tiger",
+      "bytes": 45860
+    },
+    "rhino": {
+      "file": "rhino.glb",
+      "heightM": 1.75,
+      "lengthM": 3.72,
+      "widthM": 1.16,
+      "walkSpeed": 0.9,
+      "clips": [],
+      "idleClip": null,
+      "walkClip": null,
+      "extraClips": [],
+      "placeholder": true,
+      "credit": "White Rhinoceros by Micket (CC0), opengameart.org/content/white-rhinoceros",
+      "bytes": 31476
+    }
+  }
+}

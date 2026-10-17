@@ -29,3 +29,12 @@ Thumbs.db
 # Tool caches and crash dumps
 pipeline/target/
 *.stackdump
+
+# Animal models: binaries go to the CDN, credits stay in git
+web/public/models/**/*.glb
+web/public/models/**/*.gltf
+web/public/models/**/*.zip
+web/public/models/**/*.bin
+web/public/models/**/textures/
+web/public/models/**/*.blend
+web/public/models/**/*.blend1
