@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Vantara 3D",
-  description: "Unofficial fan reconstruction of Vantara, Jamnagar, as walkable Gaussian splats.",
+  description: "Unofficial fan-made 3D model of Vantara, Jamnagar, that you can walk through.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

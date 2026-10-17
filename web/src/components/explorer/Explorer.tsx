@@ -4,8 +4,8 @@ import { PerformanceMonitor, Stats } from "@react-three/drei";
 import { Canvas, useThree } from "@react-three/fiber";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import * as THREE from "three";
-import { type AnimalPlacement, loadPlacements } from "@/lib/animals";
-import { assetPath, assetUrl, DEFAULT_LIGHTING, fetchWithProgress, fetchZoneMeta, type ZoneMeta } from "@/lib/assets";
+import type { AnimalPlacement } from "@/lib/animals";
+import { assetPath, DEFAULT_LIGHTING, fetchZoneMeta, type ZoneMeta } from "@/lib/assets";
 import { detectQuality, isTouchDevice, type Quality } from "@/lib/device";
 import { type Hotspot, loadHotspots } from "@/lib/hotspots";
 import { loadWorldCollision, loadWorldManifest, type Place, type WorldManifest, worldBase } from "@/lib/world";
@@ -20,7 +20,6 @@ import PlaceLabels from "./PlaceLabels";
 import TouchJoystick from "./TouchJoystick";
 import WalkControls, { type Player, spawnPlayer } from "./WalkControls";
 import WorldScene from "./WorldScene";
-import ZoneSplat, { SparkRendererObject } from "./ZoneSplat";
 
 type Mode = "walk" | "orbit";
 const FADE_MS = 450;
@@ -103,15 +102,13 @@ export default function Explorer({ initialZone, debug }: { initialZone?: string;
 
   const key = `${zoneId}|${quality}`;
   const [loaded, setLoaded] = useState<Loaded | null>(null);
-  const [splatReady, setSplatReady] = useState<string | null>(null);
-  const [zoneMeta, setZoneMeta] = useState<{ key: string; meta: ZoneMeta } | null>(null);
   const [worldOnScreen, setWorldOnScreen] = useState<WorldOnScreen | null>(null);
   const [worldReady, setWorldReady] = useState<string | null>(null);
   const [place, setPlace] = useState<Place | null>(null);
   const [focus, setFocus] = useState<CameraFocus | null>(null);
-  const [progress, setProgress] = useState<{ key: string; splat: number; collision: number }>({
+  const [progress, setProgress] = useState<{ key: string; world: number; collision: number }>({
     key: "",
-    splat: 0,
+    world: 0,
     collision: 0,
   });
   const [error, setError] = useState<{ key: string; message: string } | null>(null);
@@ -136,8 +133,8 @@ export default function Explorer({ initialZone, debug }: { initialZone?: string;
       .catch(() => {});
   }, []);
 
-  // Metadata, collision mesh and hotspots for the current zone. The splat
-  // streams in parallel inside the canvas.
+  // Metadata, collision mesh and hotspots for the current zone. The mesh
+  // world streams in parallel inside the canvas.
   useEffect(() => {
     if (!zoneId) return;
     const ac = new AbortController();
@@ -146,7 +143,6 @@ export default function Explorer({ initialZone, debug }: { initialZone?: string;
       try {
         const meta = await fetchZoneMeta(zoneId, ac.signal);
         if (ac.signal.aborted) return;
-        setZoneMeta({ key: k, meta });
         if (meta.world) {
           // Mesh world: manifest and collision are shared by all its zones (cached).
           const url = assetPath(meta.world.manifest);
@@ -162,23 +158,7 @@ export default function Explorer({ initialZone, debug }: { initialZone?: string;
           setLoaded({ key: k, meta, world, sharedWorld: true, hotspots, animals: manifest.animals });
           return;
         }
-        setWorldOnScreen(null);
-        const [world, hotspots, animals] = await Promise.all([
-          meta.files.collision
-            ? fetchWithProgress(
-                assetUrl(zoneId, meta.files.collision),
-                (p) => setProgress((prev) => ({ ...prev, key: k, collision: p })),
-                ac.signal,
-              ).then((buf) => CollisionWorld.fromGlb(buf))
-            : Promise.resolve(null),
-          loadHotspots(zoneId),
-          loadPlacements(zoneId),
-        ]);
-        if (ac.signal.aborted) {
-          world?.dispose();
-          return;
-        }
-        setLoaded({ key: k, meta, world, sharedWorld: false, hotspots, animals });
+        throw new Error(`Zone "${zoneId}" is not part of the mesh world`);
       } catch (e) {
         if (!ac.signal.aborted) setError({ key: k, message: e instanceof Error ? e.message : String(e) });
       }
@@ -208,7 +188,7 @@ export default function Explorer({ initialZone, debug }: { initialZone?: string;
 
   const current = loaded?.key === key ? loaded : null;
   const isWorld = !!current?.meta.world;
-  const ready = !!current && (isWorld ? worldReady === worldOnScreen?.url : splatReady === key);
+  const ready = !!current && worldReady === worldOnScreen?.url;
   const zoneError = error?.key === key ? error.message : null;
 
   const switchZone = useCallback(
@@ -305,19 +285,8 @@ export default function Explorer({ initialZone, debug }: { initialZone?: string;
     window.setTimeout(() => setToast(null), 3000);
   }, []);
 
-  // Splat zones stream their splat as soon as the zone's metadata says it is one.
-  const splatUrl =
-    zoneId && zoneMeta?.key === key && !zoneMeta.meta.world
-      ? assetUrl(zoneId, quality === "low" ? `${zoneId}.mobile.spz` : `${zoneId}.spz`)
-      : null;
   const pct =
-    progress.key === key
-      ? Math.round(
-          100 * (current?.meta.files.collision || progress.collision > 0
-            ? 0.85 * Math.max(0, progress.splat) + 0.15 * Math.max(0, progress.collision)
-            : Math.max(0, progress.splat)),
-        )
-      : 0;
+    progress.key === key ? Math.round(100 * (0.85 * Math.max(0, progress.world) + 0.15 * Math.max(0, progress.collision))) : 0;
   const zoneName = zones.find((z) => z.id === zoneId)?.name ?? zoneId ?? "";
   // HUD title follows a selected place into its zone (the world spans all zones).
   const zoneNameOf = (id: string) => zones.find((z) => z.id === id)?.name ?? places?.find((p) => p.id === id)?.name;
@@ -325,8 +294,6 @@ export default function Explorer({ initialZone, debug }: { initialZone?: string;
 
   return (
     <div className="relative h-full w-full select-none">
-      {/* flat = no tone mapping: Spark shows splat colours as stored, so meshes
-          must not be tone-mapped either or animals won't match the scene. */}
       <Canvas
         flat
         dpr={dpr}
@@ -338,22 +305,12 @@ export default function Explorer({ initialZone, debug }: { initialZone?: string;
           onDecline={() => setDpr((d) => Math.max(0.5, +(d - 0.25).toFixed(2)))}
           onIncline={() => setDpr((d) => Math.min(quality === "high" ? 1.5 : 1, +(d + 0.25).toFixed(2)))}
         />
-        <SparkRendererObject />
-        {splatUrl && (
-          <ZoneSplat
-            key={key}
-            url={splatUrl}
-            onProgress={(p) => setProgress((prev) => ({ ...prev, key, splat: p }))}
-            onReady={() => setSplatReady(key)}
-            onError={(message) => setError({ key, message })}
-          />
-        )}
         {worldOnScreen && (
           <WorldScene
             key={worldOnScreen.url}
             url={worldOnScreen.url}
             manifest={worldOnScreen.manifest}
-            onProgress={(p) => setProgress((prev) => ({ ...prev, key, splat: p }))}
+            onProgress={(p) => setProgress((prev) => ({ ...prev, key, world: p }))}
             onReady={() => setWorldReady(worldOnScreen.url)}
             onError={(message) => setError({ key, message })}
           />
@@ -522,16 +479,10 @@ export default function Explorer({ initialZone, debug }: { initialZone?: string;
             <li><b>V</b> walk/orbit · <b>F</b> flyover · <b>M</b> map · <b>Esc</b> close</li>
             {debug && <li><b>H</b> copy hotspot position · <b>N</b> noclip ({noclip ? "on" : "off"})</li>}
           </ul>
-          {isWorld ? (
-            <div className="mt-3 space-y-1 text-[11px] text-neutral-500">
-              <p>{worldOnScreen?.manifest.note}</p>
-              {worldOnScreen?.manifest.attribution.map((a) => <p key={a}>{a}</p>)}
-            </div>
-          ) : (
-            <p className="mt-3 text-[11px] text-neutral-500">
-              {quality === "high" ? "HD: full detail." : "Lite: fewer splats for phones and older laptops."}
-            </p>
-          )}
+          <div className="mt-3 space-y-1 text-[11px] text-neutral-500">
+            <p>{worldOnScreen?.manifest.note}</p>
+            {worldOnScreen?.manifest.attribution.map((a) => <p key={a}>{a}</p>)}
+          </div>
         </div>
       )}
 

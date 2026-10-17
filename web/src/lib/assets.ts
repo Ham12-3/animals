@@ -1,6 +1,6 @@
 /**
- * Where published zone files live (output of `publish-splat`):
- *   <base>/<zone>/<zone>.spz, <zone>.mobile.spz, <zone>.collision.glb, <zone>.json
+ * Where published zone files live (output of world/scripts/export_web.py):
+ *   <base>/<zone>/<zone>.json, and <base>/world/ for the shared mesh world
  *
  * Production points NEXT_PUBLIC_ASSET_BASE at the CDN / Vercel Blob. In
  * development it falls back to /dev-assets, which serves pipeline/work.

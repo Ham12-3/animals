@@ -1,6 +1,6 @@
 # Vantara 3D – web
 
-Next.js (App Router) + TypeScript + React Three Fiber + [Spark](https://sparkjs.dev) for Gaussian splats.
+Next.js (App Router) + TypeScript + React Three Fiber, rendering the Blender-built mesh world (`../world`).
 
 ```bash
 pnpm install
@@ -25,11 +25,12 @@ pnpm build
 
 How it fits together (`src/components/explorer/`):
 
-- **Zone assets** come from `publish-splat` (Phase 5): `<zone>.spz`,
-  `<zone>.mobile.spz`, `<zone>.collision.glb`, `<zone>.json`. Only the current
-  zone is in memory; switching fades out, frees it, then streams the next.
-- **Quality**: phones, tablets and low-memory machines get the mobile SPZ
-  ("Lite"); the HD/Lite button switches. Resolution adapts to hold frame rate.
+- **World assets** come from `world/scripts/export_web.py`: draco-compressed
+  meshes, textures, instanced plants and a collision mesh, shared by all zones
+  and kept loaded while you move between them.
+- **Quality**: phones, tablets and low-memory machines start in "Lite" (lower
+  render resolution); the HD/Lite button switches. Resolution also adapts
+  to hold frame rate.
 - **Collision** (`collision.ts`, `WalkControls.tsx`): a capsule is pushed out of
   the zone's collision mesh (BVH via three-mesh-bvh). Floors are the mesh where
   it has one and the fitted ground plane elsewhere; the walker won't step off
@@ -55,9 +56,6 @@ FPS meter, `window.__vantara` (player, input, collision), `N` noclip, and `H` to
 copy the point under the crosshair: aim at a spot and paste the position into
 `hotspots.json`.
 
-`/dev/spark` renders Spark's public sample splat (renderer check);
-`/dev/spark?zone=<id>` renders a locally published zone.
-
 ## Animals
 
 `src/content/animal-placements.json` places animals per zone: waypoints `[x, z]`
@@ -68,6 +66,4 @@ files.
 
 Models come from `web/public/models` in development, `NEXT_PUBLIC_MODEL_BASE`
 (CDN) in production; `src/content/animals.json` is written by the Blender
-script. To match the splats, meshes are lit by the zone's fitted ambient + sun,
-the canvas renders without tone mapping (as Spark shows splat colours), and
-each animal gets a soft contact shadow pushed away from the sun.
+script. Animals are lit by the world's sun and sky and cast real shadows.

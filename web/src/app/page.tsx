@@ -5,7 +5,6 @@ const STATUS_LABEL: Record<string, string> = {
   "awaiting-footage": "Awaiting footage",
   frames: "Frames extracted",
   posed: "Cameras solved",
-  trained: "Splat trained",
   cleaned: "Cleaned",
   live: "Live",
 };
@@ -16,7 +15,7 @@ export default function Home() {
       <header className="flex flex-col gap-2">
         <h1 className="text-3xl font-semibold tracking-tight">Vantara 3D</h1>
         <p className="text-neutral-500">
-          A walkable Gaussian-splat reconstruction of {zonesFile.site.name},{" "}
+          A walkable 3D model of {zonesFile.site.name},{" "}
           {zonesFile.site.location}.
         </p>
         <Link
@@ -62,9 +61,6 @@ export default function Home() {
         </ul>
       </section>
 
-      <p className="text-sm text-neutral-500">
-        Renderer check: <Link className="underline" href="/dev/spark">/dev/spark</Link>
-      </p>
     </main>
   );
 }
