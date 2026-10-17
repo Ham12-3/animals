@@ -28,7 +28,7 @@ Vercel Blob.
 | 3 | Camera poses (COLMAP) | done (tested on private sample) |
 | 4 | Splat training (Brush, Colab fallback) | tooling done, waiting for footage |
 | 5 | Cleanup, alignment, SPZ + mobile LOD | done (tested on private sample) |
-| 6 | Web explorer | built, waiting for approval |
+| 6 | Web explorer | done (tested on private sample) |
 | 7 | Animated animals | |
 | 8 | Polish and deploy | |
 
