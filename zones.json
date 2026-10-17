@@ -1,0 +1,52 @@
+{
+  "$schema": "./zones.schema.json",
+  "version": 1,
+  "site": {
+    "name": "Vantara",
+    "location": "Jamnagar, Gujarat, India",
+    "disclaimer": "Unofficial fan reconstruction. Not affiliated with or endorsed by Vantara."
+  },
+  "map": {
+    "image": "/map/overview.webp",
+    "width": 2048,
+    "height": 1536
+  },
+  "zones": [
+    {
+      "id": "elephant-care-centre",
+      "name": "Elephant Care Centre",
+      "description": "Shelters, pools and care facilities for rescued elephants.",
+      "videos": [],
+      "map": { "x": 0.28, "y": 0.42 },
+      "animals": ["elephant"],
+      "status": "awaiting-footage"
+    },
+    {
+      "id": "big-cat-rescue",
+      "name": "Big Cat Rescue",
+      "description": "Enclosures for rescued tigers, lions and leopards.",
+      "videos": [],
+      "map": { "x": 0.62, "y": 0.35 },
+      "animals": ["tiger", "lion"],
+      "status": "awaiting-footage"
+    },
+    {
+      "id": "herbivore-reserve",
+      "name": "Herbivore Reserve",
+      "description": "Open paddocks for rhinos and other large herbivores.",
+      "videos": [],
+      "map": { "x": 0.7, "y": 0.68 },
+      "animals": ["rhino"],
+      "status": "awaiting-footage"
+    },
+    {
+      "id": "wildlife-hospital",
+      "name": "Wildlife Hospital",
+      "description": "Veterinary hospital and rehabilitation wards.",
+      "videos": [],
+      "map": { "x": 0.4, "y": 0.72 },
+      "animals": [],
+      "status": "awaiting-footage"
+    }
+  ]
+}

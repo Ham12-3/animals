@@ -1,0 +1,31 @@
+# Raw footage and pipeline outputs are large: keep them out of git.
+pipeline/input/**
+!pipeline/input/*/
+!pipeline/input/*/.gitkeep
+pipeline/work/
+pipeline/tools/
+pipeline/node_modules/
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Heavy 3D assets go to the CDN / Vercel Blob, never the repo.
+*.ply
+*.spz
+*.splat
+*.ksplat
+*.mp4
+*.mov
+*.mkv
+*.MP4
+*.MOV
+
+.DS_Store
+Thumbs.db
+
+# Tool caches and crash dumps
+pipeline/target/
+*.stackdump

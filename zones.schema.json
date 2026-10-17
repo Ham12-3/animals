@@ -1,0 +1,149 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Vantara 3D zones",
+  "type": "object",
+  "required": [
+    "version",
+    "zones"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "version": {
+      "const": 1
+    },
+    "site": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "location": {
+          "type": "string"
+        },
+        "disclaimer": {
+          "type": "string"
+        }
+      }
+    },
+    "map": {
+      "description": "Overview map image. Zone map positions are normalised against it.",
+      "type": "object",
+      "required": [
+        "image",
+        "width",
+        "height"
+      ],
+      "properties": {
+        "image": {
+          "type": "string"
+        },
+        "width": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "height": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "zones": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "videos",
+          "map"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "description": "Folder name under pipeline/input/ and asset key on the web.",
+            "type": "string",
+            "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "videos": {
+            "description": "Video files in pipeline/input/<id>/, in walking order. Append #t=START,END (seconds) to use only part of a video. Empty means every video in the folder, sorted by name.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "map": {
+            "description": "Position on the overview map, 0..1 from the top-left corner.",
+            "type": "object",
+            "required": [
+              "x",
+              "y"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "x": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "y": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              }
+            }
+          },
+          "animals": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "elephant",
+                "tiger",
+                "lion",
+                "rhino"
+              ]
+            }
+          },
+          "status": {
+            "enum": [
+              "awaiting-footage",
+              "frames",
+              "posed",
+              "trained",
+              "cleaned",
+              "live"
+            ]
+          },
+          "align": {
+            "description": "Phase 5 alignment overrides for publish-splat.",
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "northDeg": {
+                "description": "Compass heading of the aligned scene's -Z axis, in degrees (match topdown.webp to a satellite map).",
+                "type": "number"
+              },
+              "eyeHeight": {
+                "description": "Camera height above ground while filming, in metres (default 1.5).",
+                "type": "number",
+                "exclusiveMinimum": 0
+              },
+              "scale": {
+                "description": "Explicit COLMAP-units-to-metres factor; overrides eyeHeight.",
+                "type": "number",
+                "exclusiveMinimum": 0
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

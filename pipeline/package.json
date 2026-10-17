@@ -1,0 +1,8 @@
+{
+  "name": "vantara-pipeline-tools",
+  "private": true,
+  "description": "Node CLIs used by the Python pipeline (Phase 5: splat cleanup, SPZ export)",
+  "devDependencies": {
+    "@playcanvas/splat-transform": "3.10.1"
+  }
+}
