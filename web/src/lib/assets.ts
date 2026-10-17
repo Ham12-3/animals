@@ -9,6 +9,9 @@ export const ASSET_BASE = (process.env.NEXT_PUBLIC_ASSET_BASE ?? "").replace(/\/
 
 export const assetUrl = (zone: string, file: string) => `${ASSET_BASE}/${zone}/${file}`;
 
+/** Any published file by its path under the asset base, e.g. "world/world.json". */
+export const assetPath = (p: string) => `${ASSET_BASE}/${p.replace(/^\//, "")}`;
+
 type Vec3 = [number, number, number];
 
 /** Metadata written by `publish-splat` next to each zone's splats. */
@@ -27,6 +30,12 @@ export interface ZoneMeta {
   north: { deg: number | null; known: boolean };
   /** Ambient + sun fitted to the splats (irradiance, linear RGB); lights meshes such as animals. */
   lighting?: ZoneLighting;
+  /**
+   * "world": the zone is part of the Blender-built mesh world (world/scripts/export_web.py)
+   * instead of a splat; `world.manifest` is its manifest's path under the asset base.
+   */
+  kind?: "splat" | "world";
+  world?: { manifest: string };
 }
 
 export interface ZoneLighting {

@@ -80,6 +80,7 @@ function AnimalActor({
   groundY,
   sunDirection,
   seed,
+  sceneLit,
 }: {
   spec: AnimalSpec;
   placement: AnimalPlacement;
@@ -87,6 +88,7 @@ function AnimalActor({
   groundY: number;
   sunDirection: THREE.Vector3;
   seed: number;
+  sceneLit: boolean;
 }) {
   const scene = useThree((s) => s.scene);
   const gltf = useGLTF(modelUrl(spec.file));
@@ -95,7 +97,10 @@ function AnimalActor({
   useEffect(() => {
     const model = cloneSkinned(gltf.scene);
     model.traverse((o) => {
-      if ((o as THREE.Mesh).isMesh) o.frustumCulled = false; // skinned bounds lag behind poses
+      if ((o as THREE.Mesh).isMesh) {
+        o.frustumCulled = false; // skinned bounds lag behind poses
+        o.castShadow = sceneLit; // a lit mesh world has real sun shadows
+      }
     });
     const root = new THREE.Group();
     root.add(model);
@@ -110,6 +115,7 @@ function AnimalActor({
     shadow.rotation.x = -Math.PI / 2;
     shadow.scale.set(spec.widthM * 1.5, spec.lengthM * 1.15, 1);
     shadow.renderOrder = 1;
+    shadow.visible = !sceneLit;
     scene.add(root, shadow);
 
     const mixer = new THREE.AnimationMixer(model);
@@ -128,7 +134,7 @@ function AnimalActor({
       shadowMat.dispose();
       actorRef.current = null;
     };
-  }, [gltf, scene, spec, placement, groundY, seed]);
+  }, [gltf, scene, spec, placement, groundY, seed, sceneLit]);
 
   useFrame((_, rawDt) => {
     const a = actorRef.current;
@@ -216,22 +222,28 @@ function AnimalActor({
   return null;
 }
 
-/** All animals placed in the current zone. */
+/**
+ * All animals placed in the current zone. In a splat zone they bring their own
+ * lights (fitted to the splat) and a blob shadow; in the lit mesh world
+ * (`sceneLit`) the scene's sun and sky light them and cast real shadows.
+ */
 export default function Animals({
   placements,
   world,
   groundY,
   lighting,
+  sceneLit = false,
 }: {
   placements: AnimalPlacement[];
   world: CollisionWorld | null;
   groundY: number;
   lighting: ZoneLighting;
+  sceneLit?: boolean;
 }) {
   const sunDirection = useMemo(() => new THREE.Vector3(...lighting.sun.direction).normalize(), [lighting]);
   return (
     <>
-      <ZoneLights lighting={lighting} />
+      {!sceneLit && <ZoneLights lighting={lighting} />}
       {placements.map((p, i) => (
         <AnimalActor
           key={`${p.animal}-${i}`}
@@ -241,6 +253,7 @@ export default function Animals({
           groundY={groundY}
           sunDirection={sunDirection}
           seed={i * 7919 + 17}
+          sceneLit={sceneLit}
         />
       ))}
     </>

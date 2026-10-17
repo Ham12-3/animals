@@ -1,5 +1,7 @@
 "use client";
 
+import { zonesFile } from "@/lib/zones";
+
 export interface ZoneEntry {
   id: string;
   name: string;
@@ -42,7 +44,13 @@ export default function MapOverlay({
           </button>
         </div>
 
-        <div className="relative aspect-[4/3] w-full overflow-hidden rounded-xl border border-white/10 bg-[radial-gradient(circle_at_30%_30%,#1f2a1f,#0b0f0b)]">
+        <div
+          className="relative w-full overflow-hidden rounded-xl border border-white/10 bg-[radial-gradient(circle_at_30%_30%,#1f2a1f,#0b0f0b)] bg-cover bg-center"
+          style={{
+            aspectRatio: `${zonesFile.map.width} / ${zonesFile.map.height}`,
+            backgroundImage: `url(${zonesFile.map.image}), radial-gradient(circle at 30% 30%, #1f2a1f, #0b0f0b)`,
+          }}
+        >
           {placed.map((z) => {
             const isCurrent = z.id === current;
             return (
@@ -71,6 +79,10 @@ export default function MapOverlay({
             );
           })}
         </div>
+
+        <p className="mt-2 text-[11px] text-neutral-500">
+          Top-down render of the 3D model (artistic interpretation). Outline, roads and water: © OpenStreetMap contributors.
+        </p>
 
         {local.length > 0 && (
           <div className="mt-4">

@@ -17,7 +17,7 @@
       "name": "Elephant Care Centre",
       "description": "Shelters, pools and care facilities for rescued elephants.",
       "videos": [],
-      "map": { "x": 0.28, "y": 0.42 },
+      "map": { "x": 0.386, "y": 0.487 },
       "animals": ["elephant"],
       "status": "awaiting-footage"
     },
@@ -26,7 +26,7 @@
       "name": "Big Cat Rescue",
       "description": "Enclosures for rescued tigers, lions and leopards.",
       "videos": [],
-      "map": { "x": 0.62, "y": 0.35 },
+      "map": { "x": 0.71, "y": 0.491 },
       "animals": ["tiger", "lion"],
       "status": "awaiting-footage"
     },
@@ -35,7 +35,7 @@
       "name": "Herbivore Reserve",
       "description": "Open paddocks for rhinos and other large herbivores.",
       "videos": [],
-      "map": { "x": 0.7, "y": 0.68 },
+      "map": { "x": 0.874, "y": 0.494 },
       "animals": ["rhino"],
       "status": "awaiting-footage"
     },
@@ -44,7 +44,7 @@
       "name": "Wildlife Hospital",
       "description": "Veterinary hospital and rehabilitation wards.",
       "videos": [],
-      "map": { "x": 0.4, "y": 0.72 },
+      "map": { "x": 0.605, "y": 0.449 },
       "animals": [],
       "status": "awaiting-footage"
     }

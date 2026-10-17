@@ -5,9 +5,10 @@ import { Canvas, useThree } from "@react-three/fiber";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { type AnimalPlacement, loadPlacements } from "@/lib/animals";
-import { assetUrl, DEFAULT_LIGHTING, fetchWithProgress, fetchZoneMeta, type ZoneMeta } from "@/lib/assets";
+import { assetPath, assetUrl, DEFAULT_LIGHTING, fetchWithProgress, fetchZoneMeta, type ZoneMeta } from "@/lib/assets";
 import { detectQuality, isTouchDevice, type Quality } from "@/lib/device";
 import { type Hotspot, loadHotspots } from "@/lib/hotspots";
+import { loadWorldCollision, loadWorldManifest, type WorldManifest, worldBase } from "@/lib/world";
 import { zones as configuredZones, zonesFile } from "@/lib/zones";
 import Animals from "./Animals";
 import { CollisionWorld } from "./collision";
@@ -17,6 +18,7 @@ import MapOverlay, { type ZoneEntry } from "./MapOverlay";
 import OrbitFlyover from "./OrbitFlyover";
 import TouchJoystick from "./TouchJoystick";
 import WalkControls, { type Player, spawnPlayer } from "./WalkControls";
+import WorldScene from "./WorldScene";
 import ZoneSplat, { SparkRendererObject } from "./ZoneSplat";
 
 type Mode = "walk" | "orbit";
@@ -28,8 +30,16 @@ interface Loaded {
   key: string;
   meta: ZoneMeta;
   world: CollisionWorld | null;
+  /** The collision mesh belongs to a mesh world shared by several zones: keep it. */
+  sharedWorld: boolean;
   hotspots: Hotspot[];
   animals: AnimalPlacement[];
+}
+
+/** The mesh world on screen (stays loaded while moving between its zones). */
+interface WorldOnScreen {
+  url: string;
+  manifest: WorldManifest;
 }
 
 function publicZones(): ZoneEntry[] {
@@ -93,6 +103,9 @@ export default function Explorer({ initialZone, debug }: { initialZone?: string;
   const key = `${zoneId}|${quality}`;
   const [loaded, setLoaded] = useState<Loaded | null>(null);
   const [splatReady, setSplatReady] = useState<string | null>(null);
+  const [zoneMeta, setZoneMeta] = useState<{ key: string; meta: ZoneMeta } | null>(null);
+  const [worldOnScreen, setWorldOnScreen] = useState<WorldOnScreen | null>(null);
+  const [worldReady, setWorldReady] = useState<string | null>(null);
   const [progress, setProgress] = useState<{ key: string; splat: number; collision: number }>({
     key: "",
     splat: 0,
@@ -129,6 +142,24 @@ export default function Explorer({ initialZone, debug }: { initialZone?: string;
     (async () => {
       try {
         const meta = await fetchZoneMeta(zoneId, ac.signal);
+        if (ac.signal.aborted) return;
+        setZoneMeta({ key: k, meta });
+        if (meta.world) {
+          // Mesh world: manifest and collision are shared by all its zones (cached).
+          const url = assetPath(meta.world.manifest);
+          const manifest = await loadWorldManifest(url);
+          const [world, hotspots] = await Promise.all([
+            loadWorldCollision(worldBase(url) + manifest.collision, (p) =>
+              setProgress((prev) => ({ ...prev, key: k, collision: p })),
+            ),
+            loadHotspots(zoneId),
+          ]);
+          if (ac.signal.aborted) return;
+          setWorldOnScreen((prev) => (prev?.url === url ? prev : { url, manifest }));
+          setLoaded({ key: k, meta, world, sharedWorld: true, hotspots, animals: manifest.animals });
+          return;
+        }
+        setWorldOnScreen(null);
         const [world, hotspots, animals] = await Promise.all([
           meta.files.collision
             ? fetchWithProgress(
@@ -144,7 +175,7 @@ export default function Explorer({ initialZone, debug }: { initialZone?: string;
           world?.dispose();
           return;
         }
-        setLoaded({ key: k, meta, world, hotspots, animals });
+        setLoaded({ key: k, meta, world, sharedWorld: false, hotspots, animals });
       } catch (e) {
         if (!ac.signal.aborted) setError({ key: k, message: e instanceof Error ? e.message : String(e) });
       }
@@ -153,7 +184,12 @@ export default function Explorer({ initialZone, debug }: { initialZone?: string;
   }, [zoneId, quality]);
 
   // Free the previous zone's collision data.
-  useEffect(() => () => loaded?.world?.dispose(), [loaded]);
+  useEffect(
+    () => () => {
+      if (!loaded?.sharedWorld) loaded?.world?.dispose();
+    },
+    [loaded],
+  );
 
   // New zone data: put the player at the spawn point.
   useEffect(() => {
@@ -167,8 +203,9 @@ export default function Explorer({ initialZone, debug }: { initialZone?: string;
     if (debug) Object.assign(window, { __vantara: { player: playerRef, input: inputRef, world: () => loaded?.world } });
   }, [debug, loaded]);
 
-  const ready = loaded?.key === key && splatReady === key;
   const current = loaded?.key === key ? loaded : null;
+  const isWorld = !!current?.meta.world;
+  const ready = !!current && (isWorld ? worldReady === worldOnScreen?.url : splatReady === key);
   const zoneError = error?.key === key ? error.message : null;
 
   const switchZone = useCallback(
@@ -215,7 +252,11 @@ export default function Explorer({ initialZone, debug }: { initialZone?: string;
     window.setTimeout(() => setToast(null), 3000);
   }, []);
 
-  const splatUrl = zoneId ? assetUrl(zoneId, quality === "low" ? `${zoneId}.mobile.spz` : `${zoneId}.spz`) : null;
+  // Splat zones stream their splat as soon as the zone's metadata says it is one.
+  const splatUrl =
+    zoneId && zoneMeta?.key === key && !zoneMeta.meta.world
+      ? assetUrl(zoneId, quality === "low" ? `${zoneId}.mobile.spz` : `${zoneId}.spz`)
+      : null;
   const pct =
     progress.key === key
       ? Math.round(
@@ -251,6 +292,16 @@ export default function Explorer({ initialZone, debug }: { initialZone?: string;
             onError={(message) => setError({ key, message })}
           />
         )}
+        {worldOnScreen && (
+          <WorldScene
+            key={worldOnScreen.url}
+            url={worldOnScreen.url}
+            manifest={worldOnScreen.manifest}
+            onProgress={(p) => setProgress((prev) => ({ ...prev, key, splat: p }))}
+            onReady={() => setWorldReady(worldOnScreen.url)}
+            onError={(message) => setError({ key, message })}
+          />
+        )}
         {current && (
           <>
             <CameraFov fov={current.meta.fovY} />
@@ -279,6 +330,7 @@ export default function Explorer({ initialZone, debug }: { initialZone?: string;
                   world={current.world}
                   groundY={current.meta.groundY}
                   lighting={current.meta.lighting ?? DEFAULT_LIGHTING}
+                  sceneLit={isWorld}
                 />
               </Suspense>
             )}
@@ -370,9 +422,16 @@ export default function Explorer({ initialZone, debug }: { initialZone?: string;
             <li><b>V</b> walk/orbit · <b>F</b> flyover · <b>M</b> map · <b>Esc</b> close</li>
             {debug && <li><b>H</b> copy hotspot position · <b>N</b> noclip ({noclip ? "on" : "off"})</li>}
           </ul>
-          <p className="mt-3 text-[11px] text-neutral-500">
-            {quality === "high" ? "HD: full detail." : "Lite: fewer splats for phones and older laptops."}
-          </p>
+          {isWorld ? (
+            <div className="mt-3 space-y-1 text-[11px] text-neutral-500">
+              <p>{worldOnScreen?.manifest.note}</p>
+              {worldOnScreen?.manifest.attribution.map((a) => <p key={a}>{a}</p>)}
+            </div>
+          ) : (
+            <p className="mt-3 text-[11px] text-neutral-500">
+              {quality === "high" ? "HD: full detail." : "Lite: fewer splats for phones and older laptops."}
+            </p>
+          )}
         </div>
       )}
 

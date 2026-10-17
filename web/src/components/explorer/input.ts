@@ -76,7 +76,10 @@ export function bindLook(target: HTMLElement, input: InputState, sensitivity = 0
   let last = { x: 0, y: 0 };
   const onClick = (e: Event) => {
     const touch = (e as PointerEvent).pointerType === "touch";
-    if (!touch && document.pointerLockElement !== target) target.requestPointerLock?.();
+    if (!touch && document.pointerLockElement !== target) {
+      // Refused in some embedded frames and after an Esc; look then falls back to drag.
+      Promise.resolve(target.requestPointerLock?.()).catch(() => {});
+    }
   };
   const onMove = (e: PointerEvent) => {
     if (document.pointerLockElement === target) {
@@ -89,7 +92,8 @@ export function bindLook(target: HTMLElement, input: InputState, sensitivity = 0
     }
   };
   const onDown = (e: PointerEvent) => {
-    if (e.pointerType === "touch") {
+    // Touch always drags; a mouse drags too while the pointer isn't locked.
+    if (e.pointerType === "touch" || document.pointerLockElement !== target) {
       dragging = true;
       last = { x: e.clientX, y: e.clientY };
     }
