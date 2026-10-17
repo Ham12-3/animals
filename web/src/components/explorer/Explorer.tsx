@@ -8,14 +8,15 @@ import { type AnimalPlacement, loadPlacements } from "@/lib/animals";
 import { assetPath, assetUrl, DEFAULT_LIGHTING, fetchWithProgress, fetchZoneMeta, type ZoneMeta } from "@/lib/assets";
 import { detectQuality, isTouchDevice, type Quality } from "@/lib/device";
 import { type Hotspot, loadHotspots } from "@/lib/hotspots";
-import { loadWorldCollision, loadWorldManifest, type WorldManifest, worldBase } from "@/lib/world";
+import { loadWorldCollision, loadWorldManifest, type Place, type WorldManifest, worldBase } from "@/lib/world";
 import { zones as configuredZones, zonesFile } from "@/lib/zones";
 import Animals from "./Animals";
 import { CollisionWorld } from "./collision";
 import Hotspots from "./Hotspots";
 import { bindKeyboard, createInput } from "./input";
 import MapOverlay, { type ZoneEntry } from "./MapOverlay";
-import OrbitFlyover from "./OrbitFlyover";
+import OrbitFlyover, { type CameraFocus } from "./OrbitFlyover";
+import PlaceLabels from "./PlaceLabels";
 import TouchJoystick from "./TouchJoystick";
 import WalkControls, { type Player, spawnPlayer } from "./WalkControls";
 import WorldScene from "./WorldScene";
@@ -106,6 +107,8 @@ export default function Explorer({ initialZone, debug }: { initialZone?: string;
   const [zoneMeta, setZoneMeta] = useState<{ key: string; meta: ZoneMeta } | null>(null);
   const [worldOnScreen, setWorldOnScreen] = useState<WorldOnScreen | null>(null);
   const [worldReady, setWorldReady] = useState<string | null>(null);
+  const [place, setPlace] = useState<Place | null>(null);
+  const [focus, setFocus] = useState<CameraFocus | null>(null);
   const [progress, setProgress] = useState<{ key: string; splat: number; collision: number }>({
     key: "",
     splat: 0,
@@ -238,11 +241,61 @@ export default function Explorer({ initialZone, debug }: { initialZone?: string;
         setMapOpen(false);
         setHelpOpen(false);
         setOpenHotspot(null);
+        setPlace(null);
       } else if (e.code === "KeyN" && debug) setNoclip((v) => !v);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [debug]);
+
+  // Places (mesh world): click a label or a map entry to fly there.
+  const places = worldOnScreen?.manifest.places;
+  const zoomTo = useCallback(
+    (p: Place) => {
+      setMapOpen(false);
+      setOpenHotspot(null);
+      setPlace(p);
+      setFlying(false);
+      setMode("orbit");
+      const groundY = current?.meta.groundY ?? 0;
+      const y = p.tier === 1 ? groundY : Math.max(groundY, p.position[1] - 2.5);
+      const distance = THREE.MathUtils.clamp(p.size * (p.tier === 1 ? 1.1 : 1.8), 18, 450);
+      setFocus((f) => ({ target: [p.position[0], y, p.position[2]], distance, seq: (f?.seq ?? 0) + 1 }));
+    },
+    [current],
+  );
+
+  /** Double-click in orbit: show the card of the place under the pointer, if any. */
+  const onPickScene = useCallback(
+    (hit: THREE.Vector3) => {
+      if (!places) return;
+      let best: Place | null = null;
+      let bestD = Infinity;
+      for (const p of places) {
+        if (p.tier === 1) continue;
+        const d = Math.hypot(p.position[0] - hit.x, p.position[2] - hit.z);
+        if (d < p.size * 0.6 + 3 && d < bestD) {
+          best = p;
+          bestD = d;
+        }
+      }
+      setPlace(best);
+    },
+    [places],
+  );
+
+  const walkTo = useCallback((p: Place) => {
+    const player = playerRef.current;
+    if (!p.stand || !player) return;
+    player.feet.set(...p.stand.position);
+    player.lastSafe.copy(player.feet);
+    player.velY = 0;
+    player.yaw = THREE.MathUtils.degToRad(p.stand.yawDeg);
+    player.pitch = -0.05;
+    setFocus(null);
+    setFlying(false);
+    setMode("walk");
+  }, []);
 
   const onPickPoint = useCallback((p: THREE.Vector3) => {
     const text = JSON.stringify([+p.x.toFixed(2), +p.y.toFixed(2), +p.z.toFixed(2)]);
@@ -266,6 +319,9 @@ export default function Explorer({ initialZone, debug }: { initialZone?: string;
         )
       : 0;
   const zoneName = zones.find((z) => z.id === zoneId)?.name ?? zoneId ?? "";
+  // HUD title follows a selected place into its zone (the world spans all zones).
+  const zoneNameOf = (id: string) => zones.find((z) => z.id === id)?.name ?? places?.find((p) => p.id === id)?.name;
+  const hudName = (place && zoneNameOf(place.zone)) || zoneName;
 
   return (
     <div className="relative h-full w-full select-none">
@@ -320,9 +376,18 @@ export default function Explorer({ initialZone, debug }: { initialZone?: string;
                 enabled={ready}
                 flying={flying}
                 onStopFlying={() => setFlying(false)}
+                focus={focus}
+                world={isWorld ? current.world : null}
+                onPick={onPickScene}
               />
             )}
             {ready && <Hotspots hotspots={current.hotspots} world={current.world} onOpen={setOpenHotspot} />}
+            {ready && places && <PlaceLabels
+                places={places}
+                occluders={worldOnScreen?.manifest.occluders ?? []}
+                selected={place?.id ?? null}
+                onSelect={zoomTo}
+              />}
             {ready && current.animals.length > 0 && (
               <Suspense fallback={null}>
                 <Animals
@@ -367,7 +432,7 @@ export default function Explorer({ initialZone, debug }: { initialZone?: string;
       {/* HUD */}
       <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-start justify-between gap-3 p-3">
         <div className="pointer-events-auto rounded-xl bg-black/45 px-3 py-2 text-white backdrop-blur-md">
-          <div className="text-sm font-semibold">{zoneName || "Vantara 3D"}</div>
+          <div className="text-sm font-semibold">{hudName || "Vantara 3D"}</div>
           <div className="text-[11px] text-neutral-300">{zonesFile.site.disclaimer}</div>
         </div>
         <div className="pointer-events-auto flex flex-wrap justify-end gap-1.5">
@@ -400,6 +465,40 @@ export default function Explorer({ initialZone, debug }: { initialZone?: string;
         <div className="pointer-events-none absolute left-1/2 top-1/2 z-10 size-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/70" />
       )}
 
+      {place && (
+        <div className="absolute bottom-4 left-4 z-20 w-80 max-w-[calc(100%-2rem)] rounded-2xl border border-white/15 bg-neutral-950/85 p-4 text-neutral-100 shadow-2xl backdrop-blur-md">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h3 className="font-semibold">{place.name}</h3>
+              {place.tier > 1 && (
+                <p className="text-[11px] text-neutral-400">{zoneNameOf(place.zone)}</p>
+              )}
+            </div>
+            <button onClick={() => setPlace(null)} className="text-neutral-400 hover:text-white" aria-label="Close">
+              ✕
+            </button>
+          </div>
+          {place.description && <p className="mt-2 text-sm leading-relaxed text-neutral-300">{place.description}</p>}
+          <div className="mt-3 flex gap-2">
+            <button
+              onClick={() => zoomTo(place)}
+              className="rounded-full bg-white px-3 py-1.5 text-xs font-medium text-black hover:bg-neutral-200"
+            >
+              Zoom to it
+            </button>
+            {place.stand && (
+              <button
+                onClick={() => walkTo(place)}
+                className="rounded-full border border-white/25 px-3 py-1.5 text-xs font-medium hover:bg-white/10"
+              >
+                Walk here
+              </button>
+            )}
+          </div>
+          <p className="mt-3 text-[10px] text-neutral-500">Designed layout: artistic interpretation, not surveyed.</p>
+        </div>
+      )}
+
       {openHotspot && (
         <div className="absolute bottom-4 right-4 z-20 w-80 max-w-[calc(100%-2rem)] rounded-2xl border border-white/15 bg-neutral-950/85 p-4 text-neutral-100 shadow-2xl backdrop-blur-md">
           <div className="flex items-start justify-between gap-3">
@@ -418,7 +517,8 @@ export default function Explorer({ initialZone, debug }: { initialZone?: string;
           <ul className="space-y-1 text-xs text-neutral-300">
             <li><b>Walk:</b> click the scene, move the mouse to look, WASD or arrows to move, Shift to run</li>
             <li><b>Phone:</b> left stick to move, drag anywhere else to look</li>
-            <li><b>Orbit:</b> drag to rotate, scroll or pinch to zoom</li>
+            <li><b>Orbit:</b> drag to rotate, scroll or pinch to zoom{isWorld && ", double-click to zoom in"}</li>
+            {isWorld && <li><b>Labels:</b> click a name (or a place on the map) to fly there</li>}
             <li><b>V</b> walk/orbit · <b>F</b> flyover · <b>M</b> map · <b>Esc</b> close</li>
             {debug && <li><b>H</b> copy hotspot position · <b>N</b> noclip ({noclip ? "on" : "off"})</li>}
           </ul>
@@ -441,7 +541,17 @@ export default function Explorer({ initialZone, debug }: { initialZone?: string;
         </div>
       )}
 
-      {mapOpen && <MapOverlay zones={zones} current={zoneId} onPick={switchZone} onClose={() => setMapOpen(false)} />}
+      {mapOpen && (
+        <MapOverlay
+          zones={zones}
+          current={zoneId}
+          onPick={switchZone}
+          onClose={() => setMapOpen(false)}
+          places={isWorld ? places : undefined}
+          worldMap={isWorld ? worldOnScreen?.manifest.map : undefined}
+          onPickPlace={zoomTo}
+        />
+      )}
     </div>
   );
 }

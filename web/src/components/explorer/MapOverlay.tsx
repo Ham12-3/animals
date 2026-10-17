@@ -1,5 +1,6 @@
 "use client";
 
+import { mapPoint, type Place, type WorldMap } from "@/lib/world";
 import { zonesFile } from "@/lib/zones";
 
 export interface ZoneEntry {
@@ -18,11 +19,18 @@ export default function MapOverlay({
   current,
   onPick,
   onClose,
+  places,
+  worldMap,
+  onPickPlace,
 }: {
   zones: ZoneEntry[];
   current: string | null;
   onPick: (id: string) => void;
   onClose: () => void;
+  /** Mesh world: every main place is on the map; click one to fly there. */
+  places?: Place[];
+  worldMap?: WorldMap;
+  onPickPlace?: (p: Place) => void;
 }) {
   const placed = zones.filter((z) => z.map);
   const local = zones.filter((z) => z.local);
@@ -51,6 +59,27 @@ export default function MapOverlay({
             backgroundImage: `url(${zonesFile.map.image}), radial-gradient(circle at 30% 30%, #1f2a1f, #0b0f0b)`,
           }}
         >
+          {places &&
+            worldMap &&
+            places
+              .filter((p) => p.tier === 2)
+              .map((p) => {
+                const pt = mapPoint(worldMap, p.position);
+                return (
+                  <button
+                    key={p.id}
+                    onClick={() => onPickPlace?.(p)}
+                    className="group absolute z-0 -translate-x-1/2 -translate-y-1/2 hover:z-20"
+                    style={{ left: `${pt.x * 100}%`, top: `${pt.y * 100}%` }}
+                    title={`${p.name}: fly there`}
+                  >
+                    <span className="block size-2 rounded-full bg-white/80 ring-2 ring-black/40 transition group-hover:scale-150 group-hover:bg-amber-300" />
+                    <span className="pointer-events-none absolute left-1/2 top-3 hidden -translate-x-1/2 whitespace-nowrap rounded bg-black/80 px-1.5 py-0.5 text-[10px] text-white group-hover:block">
+                      {p.name}
+                    </span>
+                  </button>
+                );
+              })}
           {placed.map((z) => {
             const isCurrent = z.id === current;
             return (
@@ -58,7 +87,7 @@ export default function MapOverlay({
                 key={z.id}
                 disabled={!z.available}
                 onClick={() => onPick(z.id)}
-                className="group absolute -translate-x-1/2 -translate-y-1/2 text-center disabled:cursor-not-allowed"
+                className="group absolute z-10 -translate-x-1/2 -translate-y-1/2 text-center disabled:cursor-not-allowed"
                 style={{ left: `${z.map!.x * 100}%`, top: `${z.map!.y * 100}%` }}
                 title={z.available ? `Go to ${z.name}` : `${z.name}: not reconstructed yet`}
               >

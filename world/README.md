@@ -98,3 +98,6 @@ instanced plants with two levels of detail, collision mesh) and
 (skip the render with `RENDER_MAP=False; ` before `exec`). The dev server
 serves `publish/` under `/dev-assets`; open `/explore?zone=elephant-care-centre`.
 About 12 MB in total.
+
+The manifest also lists every named place (labels, click-to-zoom, map dots,
+"walk here" standing points) and the solid buildings that hide labels.

@@ -128,3 +128,24 @@ open. Newest entries at the bottom of each day.
 - Known: far trees (4k faces) look thin; `boulder_01` won't decimate below
   26k faces (19 instances, acceptable); animals are still the low-poly
   placeholders.
+
+### World: labels and click-to-zoom
+- Every named part of the site is now a "place" in `world.json` (62: six
+  zones plus buildings, shelters, enclosures, paddocks, pools, ponds,
+  paths), each with a short description, a size and a walkable standing
+  point outside buildings, fences and water (`export_web.py`).
+- 3D name labels on all of them, in three tiers so the view never fills
+  with text: zone names from afar, main places within 350 m, small things
+  (night houses, ponds in paddocks, parking) within 90 m. Labels behind the
+  viewer or behind a building are hidden (exact test against building
+  footprints; see-through fences and open sheds don't hide anything).
+- Click a label: the camera flies there (orbit view, 1.4 s eased arc) and
+  a card shows the name, zone and description, with "Zoom to it" and
+  "Walk here". Double-click anywhere in orbit view zooms to that spot and
+  opens the card of the place under it.
+- The overview map shows every main place as a dot (name on hover); click
+  one to fly there, in any zone. Walking is no longer limited to the
+  current zone: the whole site is walkable.
+- Fixed while testing: labels showing mirrored for places behind the viewer;
+  labels through buildings; duplicate "Entrance plaza" label; HUD title now
+  follows the selected place.

@@ -411,9 +411,12 @@ def zone_meta(zone_id, layout_id, spawn, heading, sun_dir, sizes):
         a = 2 * math.pi * k / 10
         rx, ry = (max(xs) - min(xs)) * 0.38, (max(ys) - min(ys)) * 0.38
         path.append(to_three((cx + rx * math.cos(a), cy + ry * math.sin(a), 12.0)))
-    m = 80
-    lo = to_three((min(xs) - m, max(ys) + m, -5))
-    hi = to_three((max(xs) + m, min(ys) - m, 60))
+    # Walkable bounds: the whole site, so "walk here" works for places in other zones.
+    ox = [p[0] for p in SITE["outline"]]
+    oy = [p[1] for p in SITE["outline"]]
+    m = 60
+    lo = to_three((min(ox) - m, max(oy) + m, -5))
+    hi = to_three((max(ox) + m, min(oy) - m, 60))
     return {
         "zone": zone_id,
         "units": "m",
@@ -437,15 +440,165 @@ def zone_meta(zone_id, layout_id, spawn, heading, sun_dir, sizes):
     }
 
 
-def render_map():
-    """Top-down orthographic overview for the explorer's map, plus zone positions on it (0..1)."""
-    scene = bpy.context.scene
+def map_frame():
+    """Area the overview map shows: centre and size in Blender metres, image size in pixels."""
     xs = [p[0] for p in SITE["outline"]]
     ys = [p[1] for p in SITE["outline"]]
     w, h = 2048, 1536
-    cx, cy = (min(xs) + max(xs)) / 2, (min(ys) + max(ys)) / 2
     span_x = max(max(xs) - min(xs), (max(ys) - min(ys)) * w / h) * 1.08
-    span_y = span_x * h / w
+    return {
+        "centre": [round((min(xs) + max(xs)) / 2, 2), round((min(ys) + max(ys)) / 2, 2)],
+        "span": [round(span_x, 2), round(span_x * h / w, 2)],
+        "size": [w, h],
+    }
+
+
+# Label text for designed places (artistic interpretation), matched on the item name.
+DESCRIPTIONS = [
+    ("elephant shelter", "Open-sided shelter on deep sand where elephants rest out of the sun."),
+    ("shelter yards", "Sand yards beside the shelters, where elephants are fed and checked."),
+    ("elephant paddock", "Large sand paddock for exercise and for elephants to socialise."),
+    ("bathing pond", "Elephants bathe and cool off here."),
+    ("mud wallow", "Mud protects elephant skin from sun and insects."),
+    ("hydrotherapy pool", "Warm-water pool for elephants with joint and foot problems."),
+    ("pool deck", "Deck around the hydrotherapy pool for keepers and vets."),
+    ("elephant kitchen", "Prepares the elephants' daily diets of fodder, fruit and vegetables."),
+    ("elephant care office", "Keepers' and vets' office for the elephant centre."),
+    ("hospital main block", "Multi-speciality veterinary hospital: diagnostics, labs and treatment rooms."),
+    ("surgery and icu", "Operating theatres and intensive care."),
+    ("recovery ward", "Wards where animals recover after treatment."),
+    ("ambulance bay", "Where animal ambulances unload."),
+    ("hospital parking", "Staff and ambulance parking."),
+    ("hospital forecourt", "Entrance forecourt of the hospital."),
+    ("night house", "Indoor den where the cat sleeps and is fed."),
+    ("big cat enclosure", "Grassed enclosure with shade trees, rocks and a night house for a rescued big cat."),
+    ("large enclosure pool", "Pool in the large enclosure."),
+    ("large enclosure", "The largest cat enclosure, with its own pool."),
+    ("visitor path", "Paved path between the big-cat enclosures."),
+    ("shade shelter", "Shade for the herbivores in the heat of the day."),
+    ("pond", "Watering pond."),
+    ("paddock", "Open paddock for rhinos and other large herbivores, with a pond and shade."),
+    ("entrance plaza", "Paved plaza at the south gate."),
+    ("gatehouse", "Gate and security post."),
+    ("visitor centre", "Reception for visitors."),
+]
+ZONE_DESCRIPTIONS = {
+    "elephant-care-centre": "Shelters, yards, pools and a kitchen for rescued elephants.",
+    "wildlife-hospital": "Veterinary hospital and recovery wards.",
+    "entrance": "South gate, gatehouse and visitor centre.",
+    "big-cat-rescue": "Ten enclosures and a large one for rescued tigers, lions and leopards.",
+    "herbivore-reserve": "Three open paddocks for rhinos and other large herbivores.",
+    "woodland": "Not described publicly: shown as native woodland.",
+}
+
+
+def poly_area(poly):
+    return abs(sum(x0 * y1 - x1 * y0 for (x0, y0), (x1, y1) in zip(poly, poly[1:] + poly[:1]))) / 2
+
+
+def label_name(name):
+    return name.split(" (")[0]
+
+
+def places():
+    """Every named part of the site, for 3D labels, click-to-zoom and the map.
+
+    tier 1: zones (always shown), 2: main places, 3: small things (shown close up).
+    stand: a walkable spot outside buildings, fences and water, facing the place.
+    """
+    blockers, fences = [], []
+    for z in LAYOUT["zones"]:
+        for it in z["items"]:
+            if it["type"] in ("building", "shed"):
+                blockers.append(it["footprint"])
+            elif it["type"] == "water":
+                blockers.append(it["polygon"])
+            elif it["type"] == "fence" and it.get("closed", True):
+                fences.append(it["points"])
+    outline = SITE["outline"]
+
+    def stand_for(cx, cy, reach, own):
+        # Outside fences if possible (visitors' side); else inside the yard (ponds in paddocks).
+        return stand_among(cx, cy, reach, own, blockers + fences) or stand_among(cx, cy, reach, own, blockers)
+
+    def stand_among(cx, cy, reach, own, blockers):
+        for ring in (reach + 4, reach + 10, reach + 20):
+            for k in range(16):
+                a = -math.pi / 2 + k * math.pi / 8  # start south of the place, then go round
+                q = (cx + ring * math.cos(a), cy + ring * math.sin(a))
+                if not inside(q, outline) or edge_dist(q, outline) < 3:
+                    continue
+                if any(inside(q, b) or edge_dist(q, b) < 1.5 for b in blockers if b is not own):
+                    continue
+                if own is not None and inside(q, own):
+                    continue
+                heading = math.degrees(math.atan2(cx - q[0], cy - q[1]))  # clockwise from north
+                return {"position": to_three((q[0], q[1], GROUND_Y)), "yawDeg": round(-heading, 1)}
+        return None
+
+    out = []
+    for z in LAYOUT["zones"]:
+        area = z["area"]
+        cx = sum(p[0] for p in area) / len(area)
+        cy = sum(p[1] for p in area) / len(area)
+        out.append({
+            "id": z["id"], "name": z["name"].split(" (")[0], "tier": 1, "zone": z["id"], "kind": "zone",
+            "description": ZONE_DESCRIPTIONS.get(z["id"], ""),
+            "position": to_three((cx, cy, 32.0)), "size": round(math.sqrt(poly_area(area)), 1),
+            "stand": None,
+        })  # fmt: skip
+        for it in z["items"]:
+            if it["type"] == "fence" or it["name"] == "Pool deck" or label_name(it["name"]) == z["name"]:
+                continue  # fences, the deck under the pool label, and areas named like their zone
+            poly = it.get("footprint") or it.get("polygon")
+            a = poly_area(poly)
+            px = sum(p[0] for p in poly) / len(poly)
+            py = sum(p[1] for p in poly) / len(poly)
+            height = it.get("height", 0.0)
+            low = it["name"].lower()
+            if it["type"] in ("building", "shed"):
+                tier = 2 if a >= 200 and not low.startswith("night house") else 3
+            elif it["type"] == "water":
+                tier = 3 if "paddock" in low or "large enclosure" in low else 2
+            else:
+                tier = 2 if a >= 1000 or "path" in low or "plaza" in low else 3
+            desc = next((d for key, d in DESCRIPTIONS if key in low), "")
+            reach = math.sqrt(a) / 2
+            own = poly if it["type"] in ("building", "shed", "water") else None
+            fenced = next((f for f in fences if f == poly), None)
+            out.append({
+                "id": f"{z['id']}/{low.replace(' ', '-').replace('(', '').replace(')', '')}",
+                "name": label_name(it["name"]), "tier": tier, "zone": z["id"], "kind": it["type"],
+                "description": desc,
+                "position": to_three((px, py, height + 2.5 if height else 2.5)),
+                "size": round(max(6.0, math.sqrt(a)), 1),
+                "stand": stand_for(px, py, reach, own or fenced),
+            })  # fmt: skip
+    return out
+
+
+def occluders():
+    """Solid buildings as footprint + top height (three.js frame): labels behind them are hidden.
+    Open sheds and see-through fences don't hide anything."""
+    out = []
+    for z in LAYOUT["zones"]:
+        for it in z["items"]:
+            if it["type"] != "building":
+                continue
+            pts = it["footprint"]
+            short = min(math.dist(pts[0], pts[1]), math.dist(pts[1], pts[2]))
+            top = it["height"] + (0.28 * short if it["roof"] == "gable" else 1.0)
+            out.append({"footprint": [[round(x, 2), round(-y, 2)] for x, y in pts], "top": round(top, 2)})
+    return out
+
+
+def render_map():
+    """Top-down orthographic overview for the explorer's map, plus zone positions on it (0..1)."""
+    scene = bpy.context.scene
+    frame = map_frame()
+    w, h = frame["size"]
+    cx, cy = frame["centre"]
+    span_x, span_y = frame["span"]
     cam_data = bpy.data.cameras.new("Map")
     cam_data.type = "ORTHO"
     cam_data.ortho_scale = span_x
@@ -574,6 +727,9 @@ def export():
         "depthLayers": {f"Web: {k}": v for k, v in DEPTH_LAYERS.items()},
         "sun": sun,
         "animals": animal_paths(),
+        "places": places(),
+        "occluders": occluders(),
+        "map": {"image": "/map/overview.webp", **map_frame()},
         "bytes": total,
     }  # fmt: skip
     with open(os.path.join(OUT_WORLD, "world.json"), "w", encoding="utf-8") as f:
