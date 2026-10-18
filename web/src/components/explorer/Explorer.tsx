@@ -8,7 +8,7 @@ import type { AnimalPlacement } from "@/lib/animals";
 import { assetPath, DEFAULT_LIGHTING, fetchZoneMeta, type ZoneMeta } from "@/lib/assets";
 import { detectQuality, isTouchDevice, type Quality } from "@/lib/device";
 import { type Hotspot, loadHotspots } from "@/lib/hotspots";
-import { loadWorldCollision, loadWorldManifest, type Place, type WorldManifest, worldBase } from "@/lib/world";
+import { loadWorldManifest, type Place, type WorldManifest } from "@/lib/world";
 import { zones as configuredZones, zonesFile } from "@/lib/zones";
 import Animals from "./Animals";
 import { CollisionWorld } from "./collision";
@@ -19,12 +19,26 @@ import OrbitFlyover, { type CameraFocus } from "./OrbitFlyover";
 import PlaceLabels from "./PlaceLabels";
 import TouchJoystick from "./TouchJoystick";
 import WalkControls, { type Player, spawnPlayer } from "./WalkControls";
+import { type BuiltWorld, loadBuiltWorld } from "./world/build";
 import WorldScene from "./WorldScene";
 
 type Mode = "walk" | "orbit";
 const FADE_MS = 450;
 const EYE_HEIGHT = 1.6;
 const isDev = process.env.NODE_ENV === "development";
+
+/**
+ * Adaptive quality: PerformanceMonitor steps down one tier when the frame rate
+ * drops and back up when it recovers. Resolution first, then plant draw
+ * distance, then sun-shadow resolution, and finally the shadows themselves.
+ */
+const TIERS = [
+  { resolution: 1, detail: 1, shadowSize: 2048 },
+  { resolution: 0.8, detail: 0.8, shadowSize: 2048 },
+  { resolution: 0.65, detail: 0.6, shadowSize: 1024 },
+  { resolution: 0.5, detail: 0.45, shadowSize: 1024 },
+  { resolution: 0.5, detail: 0.3, shadowSize: 0 },
+];
 
 interface Loaded {
   key: string;
@@ -40,6 +54,7 @@ interface Loaded {
 interface WorldOnScreen {
   url: string;
   manifest: WorldManifest;
+  built: BuiltWorld;
 }
 
 function publicZones(): ZoneEntry[] {
@@ -98,7 +113,11 @@ export default function Explorer({ initialZone, debug }: { initialZone?: string;
   const [fadeOut, setFadeOut] = useState(false);
   const [noclip, setNoclip] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
-  const [dpr, setDpr] = useState(() => Math.min(window.devicePixelRatio || 1, quality === "high" ? 1.5 : 1));
+  const [tier, setTier] = useState(0);
+
+  const maxDpr = Math.min(window.devicePixelRatio || 1, quality === "high" ? 1.5 : 1);
+  const { resolution, detail, shadowSize } = TIERS[tier];
+  const dpr = Math.max(0.5, +(maxDpr * resolution).toFixed(2));
 
   const key = `${zoneId}|${quality}`;
   const [loaded, setLoaded] = useState<Loaded | null>(null);
@@ -133,8 +152,8 @@ export default function Explorer({ initialZone, debug }: { initialZone?: string;
       .catch(() => {});
   }, []);
 
-  // Metadata, collision mesh and hotspots for the current zone. The mesh
-  // world streams in parallel inside the canvas.
+  // Metadata and hotspots for the current zone; the world (meshes, plants,
+  // collision) is built once from world.json and shared by every zone.
   useEffect(() => {
     if (!zoneId) return;
     const ac = new AbortController();
@@ -144,18 +163,15 @@ export default function Explorer({ initialZone, debug }: { initialZone?: string;
         const meta = await fetchZoneMeta(zoneId, ac.signal);
         if (ac.signal.aborted) return;
         if (meta.world) {
-          // Mesh world: manifest and collision are shared by all its zones (cached).
           const url = assetPath(meta.world.manifest);
           const manifest = await loadWorldManifest(url);
-          const [world, hotspots] = await Promise.all([
-            loadWorldCollision(worldBase(url) + manifest.collision, (p) =>
-              setProgress((prev) => ({ ...prev, key: k, collision: p })),
-            ),
+          const [built, hotspots] = await Promise.all([
+            loadBuiltWorld(url, manifest, (p) => setProgress((prev) => ({ ...prev, key: k, world: p, collision: p }))),
             loadHotspots(zoneId),
           ]);
           if (ac.signal.aborted) return;
-          setWorldOnScreen((prev) => (prev?.url === url ? prev : { url, manifest }));
-          setLoaded({ key: k, meta, world, sharedWorld: true, hotspots, animals: manifest.animals });
+          setWorldOnScreen((prev) => (prev?.url === url ? prev : { url, manifest, built }));
+          setLoaded({ key: k, meta, world: built.collision, sharedWorld: true, hotspots, animals: manifest.animals });
           return;
         }
         throw new Error(`Zone "${zoneId}" is not part of the mesh world`);
@@ -302,15 +318,16 @@ export default function Explorer({ initialZone, debug }: { initialZone?: string;
         className="touch-none"
       >
         <PerformanceMonitor
-          onDecline={() => setDpr((d) => Math.max(0.5, +(d - 0.25).toFixed(2)))}
-          onIncline={() => setDpr((d) => Math.min(quality === "high" ? 1.5 : 1, +(d + 0.25).toFixed(2)))}
+          onDecline={() => setTier((t) => Math.min(TIERS.length - 1, t + 1))}
+          onIncline={() => setTier((t) => Math.max(0, t - 1))}
         />
         {worldOnScreen && (
           <WorldScene
             key={worldOnScreen.url}
-            url={worldOnScreen.url}
+            built={worldOnScreen.built}
             manifest={worldOnScreen.manifest}
-            onProgress={(p) => setProgress((prev) => ({ ...prev, key, world: p }))}
+            detail={detail}
+            shadowSize={shadowSize}
             onReady={() => setWorldReady(worldOnScreen.url)}
             onError={(message) => setError({ key, message })}
           />

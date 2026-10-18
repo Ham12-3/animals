@@ -7,7 +7,7 @@
     "disclaimer": "Unofficial fan reconstruction. Not affiliated with or endorsed by Vantara."
   },
   "map": {
-    "image": "/map/overview.webp",
+    "image": "/map/overview.svg",
     "width": 2048,
     "height": 1536
   },

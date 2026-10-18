@@ -163,26 +163,16 @@ into the web app.
 
 ## Phase 7: animals
 
-Models live in Blender (driven through the MCP-for-Blender add-on socket, see
-`vantara_pipeline/blender_bridge.py`), one collection per animal named
-`Animal: <name>`. Then:
-
-```bash
-uv run python -m vantara_pipeline.blender_bridge execute_code \
-  --code "exec(open('blender/prepare_animals.py', encoding='utf-8').read())"
-```
-
-`blender/prepare_animals.py` poses each model at rest, scales it to real height,
-centres it with feet on the ground facing glTF +Z, gives untextured meshes a
-realistic flat albedo, and exports `web/public/models/<name>.glb` (modifiers
-applied, skin + every action as a clip). It writes
-`web/src/content/animals.json` (sizes, clips, idle/walk clip names, credits).
-Edit the `ANIMALS` table at the top to add or swap models.
+The animal GLBs in `web/public/models/` were prepared once in Blender (rest
+pose, real height, feet on the ground, facing glTF +Z, every action as a
+clip). Blender has since been removed from the project (see DEVLOG.md,
+2026-10-18); the script is in git history. A replacement model must already
+be a GLB in that form; `web/src/content/animals.json` (sizes, clips,
+idle/walk clip names, credits) is edited by hand.
 
 Current models are CC0 low-poly placeholders (see `web/public/models/CREDITS.md`):
 only the elephant has clips and none has a walk cycle, so the explorer adds a
-procedural gait. Swap in the realistic CC-BY set by importing them into the
-same collections and re-running the script.
+procedural gait.
 
 `publish-splat` also estimates each zone's **lighting** for these meshes:
 opaque flat splats give surface normals and colours, a first-order spherical

@@ -4,8 +4,8 @@ import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js
 import { type ExtendedTriangle, MeshBVH } from "three-mesh-bvh";
 
 /**
- * The zone's invisible collision mesh (from `publish-splat`, same frame as the
- * splat) with a BVH for fast capsule and ray queries.
+ * The zone's invisible collision mesh (a GLB, or triangles built in the
+ * browser) with a BVH for fast capsule and ray queries.
  */
 export class CollisionWorld {
   readonly bvh: MeshBVH;
@@ -32,6 +32,13 @@ export class CollisionWorld {
     const merged = parts.length === 1 ? parts[0] : mergeGeometries(parts, false);
     if (!merged) throw new Error("could not merge collision meshes");
     return new CollisionWorld(merged);
+  }
+
+  /** From a triangle soup (x, y, z per vertex), e.g. the world built in the browser. */
+  static fromPositions(positions: Float32Array): CollisionWorld {
+    const g = new THREE.BufferGeometry();
+    g.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+    return new CollisionWorld(g);
   }
 
   /** First hit along a ray, or null. */

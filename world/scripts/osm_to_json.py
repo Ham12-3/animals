@@ -4,8 +4,8 @@
 
 Reads world/data/vantara_area.osm (© OpenStreetMap contributors, ODbL) and
 writes world/data/site.json: the Vantara outline, roads, water and buildings
-in metres around the outline's centre (X = east, Y = north, the same axes as
-Blender), cropped to a square of +-RADIUS metres.
+in metres around the outline's centre (X = east, Y = north), cropped to a
+square of +-RADIUS metres.
 """
 
 from __future__ import annotations

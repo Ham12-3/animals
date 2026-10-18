@@ -31,7 +31,7 @@ export interface ZoneMeta {
   /** Ambient + sun fitted to the splats (irradiance, linear RGB); lights meshes such as animals. */
   lighting?: ZoneLighting;
   /**
-   * "world": the zone is part of the Blender-built mesh world (world/scripts/export_web.py)
+   * "world": the zone is part of the world compiled by world/scripts/compile_world.py
    * instead of a splat; `world.manifest` is its manifest's path under the asset base.
    */
   kind?: "splat" | "world";

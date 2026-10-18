@@ -3,7 +3,7 @@ import placementsFile from "@/content/animal-placements.json";
 import { assetUrl } from "@/lib/assets";
 import type { AnimalKind } from "@/lib/zones";
 
-/** One animal model, as exported by pipeline/blender/prepare_animals.py. */
+/** One animal model in web/public/models (see content/animals.json). */
 export interface AnimalSpec {
   file: string;
   heightM: number;

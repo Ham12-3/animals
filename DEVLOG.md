@@ -149,3 +149,133 @@ open. Newest entries at the bottom of each day.
 - Fixed while testing: labels showing mirrored for places behind the viewer;
   labels through buildings; duplicate "Entrance plaza" label; HUD title now
   follows the selected place.
+
+## 2026-10-18
+
+### World: fuller forest and real water (in Blender, then dropped)
+- Designed in Blender: ponds, the wallow and the lakes became basins (holes
+  cut in every ground layer, sloped wet banks, a bed, see-through water that
+  is light at the edges and dark in the middle, a wet-mud shore band);
+  the hydrotherapy pool got walls, a floor and an elephant ramp. About 3x the
+  trees: a closed woodland with understory, avenues along the internal
+  roads, shade in every yard, planted shores, a darker woodland floor.
+  Animals cut by 40% (15 -> 9: 4 elephants, 3 tigers, 2 rhinos).
+- Problem: the laptop's Intel Iris Xe can't render the full scene. EEVEE ran
+  out of GPU memory (blank frames), and Blender hung twice; the screen
+  flashed as Windows reset the graphics driver. Lighter settings (fewer
+  samples, smaller shadow pool, solid viewport) only delayed it.
+- Decision: remove Blender from the workflow. The browser explorer already
+  runs the world at 60 fps, so the world will be built in the browser from
+  the data files instead.
+
+### No-Blender step 1: world compiler
+- `world/scripts/compile_world.py` (+ `worldgeo.py`, plain Python) turns
+  `site.json` + `layout.json` into `world/publish/world/world.json`: every
+  ground layer (with holes for water), road, wall, building, roof, window,
+  fence, water basin, the pool, every plant and animal, the 61 places, as
+  simple primitives the browser will turn into meshes. Also writes the
+  per-zone metadata files.
+- Same scene as the Blender version (794 trees, 670 bushes, 1,084 shrubs,
+  69 rocks, 316 windows, 9 animals), in 3.5 s instead of ~6 min, and
+  0.31 MB of data.
+- `world/tests/test_compile_world.py`: 11 checks (deterministic, plants inside
+  the site and off buildings, animals out of the water, water cut out of the
+  ground, basins slope down, materials defined, places have standing spots,
+  sun position). Found and fixed: the eastern lake reaches 5.8 km out, past
+  the 10 km ground square, so it got no hole; the ground is now 14 km.
+- Not yet: the explorer still expects the old Blender export, so it shows an
+  error until step 3 (the browser builder) lands.
+
+### No-Blender step 2: textures and plant models
+- `world/scripts/prepare_textures.py` (OpenCV): surface textures for the web
+  (colour 1024 px, normal maps 512 px) -> `world/publish/world/textures/`,
+  2.7 MB; stages 512 px copies of the plant textures.
+- `world/tools/build_plants.mjs` (Node: gltf-transform 4.5.1 + meshoptimizer
+  1.3.0, MIT; `world/tools/node_modules` is gitignored): every plant variant
+  as a near and a far model in one `plants.glb` (3.6 MB, built in ~5 s),
+  base centre at the origin, meshopt-compressed.
+  - Bark, branches: shape-preserving simplification only. The first try also
+    allowed "sloppy" simplification, which broke the tree trunk.
+  - Leaves: keep a random share of whole leaves and enlarge each kept leaf
+    about its centre, so the canopy thins far less than the face count.
+  - Budgets (near/far faces): tree 60k/10k, bush 6k/1.5k, shrub 3k/1k,
+    rock 3k/500. The boulder Blender couldn't reduce below 26k is now 2.9k.
+- `world.json` now names its assets; a test checks every texture and plant
+  variant it references exists. 12 tests pass.
+- Web world total: ~6.6 MB (Blender export was 11.6 MB).
+
+### three.js docs check (for step 3)
+Read the current docs (threejs.org/docs, r186) before building:
+- `BatchedMesh`: different geometries, one draw call, per-object frustum
+  culling (`perObjectFrustumCulled`) and `setGeometryIdAt` to swap a plant's
+  level of detail in place -> plants.
+- `ShapeUtils.triangulateShape(contour, holes)` (Earcut) -> ground layers
+  with pond and lake holes.
+- `BufferGeometryUtils.mergeGeometries` -> buildings, fences, windows merged
+  into a few meshes per material.
+- `Material.polygonOffset` (stacked ground layers), `alphaHash` /
+  `alphaToCoverage` (leaf edges), `vertexColors` (graded water).
+- `LightShadow.autoUpdate` / `needsUpdate`: the world and sun are static, so
+  the shadow map only needs redrawing when the shadow area moves or animals
+  move.
+- `GLTFLoader.setMeshoptDecoder` + `KHR_mesh_quantization` /
+  `EXT_meshopt_compression` are supported (plants.glb). The CSM cascaded
+  shadows add-on exists but is heavier; keeping one shadow area that follows
+  the viewer for the Iris Xe.
+
+### No-Blender step 3: the world built in the browser
+- `web/src/components/explorer/world/`: `geometry.ts` (one GeometryBuilder per
+  material; ground with holes via `ShapeUtils.triangulateShape`, ribbons,
+  prisms, gables, boxes, basins, pool; faces turned the right way, UVs in
+  world metres / tile), `materials.ts` (Poly Haven textures loaded once and
+  shared, polygon offset per ground layer, generated chain-link, vertex-
+  coloured water), `plants.ts` (one `BatchedMesh` per plant material,
+  per-plant culling, level of detail swapped in place with
+  `setGeometryIdAt`; distant trees as billboards rendered on the viewer's
+  machine into a front|side atlas), `build.ts` (assembles it all once per
+  session, plus the collision mesh: every solid surface, shore walls, tree
+  trunks and rocks).
+- `WorldScene` now only shows the built world; the sun shadow map is redrawn
+  only when its area moves or every 3rd frame (`shadow.autoUpdate = false`).
+- No Blender anywhere: the explorer reads world.json, textures and
+  plants.glb (about 6.6 MB).
+- Measured in the browser pane: spawn view 51k triangles / 30 draw calls;
+  inside the woodland 2.5M triangles / 29 draw calls; aerial 43k triangles /
+  42 draw calls; 60 fps on the Iris Xe.
+- Bugs found and fixed while testing:
+  - Textures 404'd: the dev asset route only served files directly in a zone
+    folder; it is now a catch-all route that checks every path segment
+    (`..` is rejected).
+  - Near trees were invisible while their shadows showed: the billboard step
+    had rendered the trees' own materials on plain meshes first, so three.js
+    kept those materials compiled for non-batched drawing and the batches
+    drew nothing. The billboard renders now use material copies.
+- Checked: woodland (full canopy, understory, shade), bathing pond (wet
+  shore, water), aerial (matches the Blender render), collision with pond
+  shores and tree trunks.
+- Not yet polished: pond water looks pale/mirror-like from low angles.
+
+### No-Blender step 4: vector overview map
+- `world/scripts/overview_map.py` (called by `compile_world.py`) draws the
+  map as an SVG from the same data as the 3D world: ground layers, water,
+  roads, railway, streams, wall, fences, tree and bush canopies, buildings
+  and shelters. `web/public/map/overview.svg`, 124 kB, sharp at any size;
+  replaces the Blender render (`overview.webp`, deleted). Zone positions in
+  `zones.json` are written from the same frame (unchanged), and the map
+  overlay's caption now says it is drawn from the data.
+
+### No-Blender step 5: Blender removed
+- Deleted (still in git history): `world/scripts/build_site_base.py`,
+  `build_zones.py`, `dress_zones.py`, `export_web.py`, `render_previews.py`,
+  `pipeline/vantara_pipeline/blender_bridge.py`,
+  `pipeline/blender/prepare_animals.py`, `.mcp.json` (its only entry was the
+  Blender MCP server).
+- Deleted local files (never in git): `world/vantara_world.blend` and its
+  backup (78 MB each), the 18 Blender preview renders.
+- READMEs (root, world, web, pipeline), code comments, `animals.json` and
+  `.gitignore` updated; the only remaining mentions of Blender are history.
+- The animal GLBs stay as they are (made once in Blender); a replacement must
+  already be a GLB facing +Z at real size, and `animals.json` is edited by hand.
+- Checks: 12 world tests, 22 pipeline tests, web typecheck and lint pass; in
+  the browser the world loads with every asset 200 and the map overlay shows
+  the vector map with zone and place dots in place.

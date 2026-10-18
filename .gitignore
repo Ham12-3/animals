@@ -39,9 +39,7 @@ web/public/models/**/textures/
 web/public/models/**/*.blend
 web/public/models/**/*.blend1
 
-# Blender world: scripts are the source; the .blend is rebuilt from them
-world/*.blend
-world/*.blend1
-world/renders/
+# World: data and scripts are the source; downloads and generated files stay out
 world/assets/
 world/publish/
+world/tools/node_modules/

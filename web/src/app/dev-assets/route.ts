@@ -1,5 +1,5 @@
 // Development only: lists zones published locally, by `publish-splat`
-// (pipeline/work/<zone>/publish/<zone>.json) or by the Blender world export
+// (pipeline/work/<zone>/publish/<zone>.json) or by the world compiler
 // (world/publish/<zone>/<zone>.json). Returns 404 in production.
 import { readdir, stat } from "node:fs/promises";
 import path from "node:path";

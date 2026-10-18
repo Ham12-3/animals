@@ -1,7 +1,8 @@
-# Vantara world (Blender): artistic interpretation
+# Vantara world: artistic interpretation
 
-A Blender recreation of Vantara built from open map data, for when there is no
-footage to reconstruct from.
+Vantara built from open map data and a designed layout, compiled with plain
+Python and built into 3D in the browser. No Blender, no heavy rendering on the
+machine that builds it.
 
 > **Artistic interpretation.** Only Vantara's outline, the surrounding roads,
 > water and railway come from map data. Everything inside the site (enclosures,
@@ -10,94 +11,78 @@ footage to reconstruct from.
 >
 > Map data © OpenStreetMap contributors, available under the
 > [Open Database License](https://www.openstreetmap.org/copyright).
+> Textures and plant models: [Poly Haven](https://polyhaven.com), CC0.
+
+## How it works
+
+```
+data/vantara_area.osm --osm_to_json.py--> data/site.json ----+
+scripts/design_layout.py ---------------> data/layout.json --+--compile_world.py--> publish/world/world.json
+                                                             |                     publish/<zone>/<zone>.json
+                                                             |                     web/public/map/overview.svg
+assets/polyhaven (fetch_polyhaven.py) --prepare_textures.py--> publish/world/textures/
+                                      --tools/build_plants.mjs--> publish/world/plants.glb
+```
+
+`world.json` (~0.3 MB) describes the whole site as simple primitives: ground
+layers with holes for water, roads, walls, buildings, roofs, windows, fences,
+pond and lake basins, the hydrotherapy pool, every plant and animal, the
+labelled places. The explorer (`web/src/components/explorer/world/`) turns it
+into meshes when the page loads. The web world totals about 6.6 MB.
+
+## Rebuild
+
+```bash
+uv run --project pipeline python world/scripts/osm_to_json.py      # only if the OSM extract changes
+uv run --project pipeline python world/scripts/design_layout.py    # only if the layout changes
+uv run --project pipeline python world/scripts/fetch_polyhaven.py  # once: CC0 textures and models (~100 MB, not in git)
+uv run --project pipeline python world/scripts/compile_world.py    # world.json, zone files, overview map (~4 s)
+uv run --project pipeline python world/scripts/prepare_textures.py # web textures
+cd world/tools && pnpm install && node build_plants.mjs && cd ../.. # plants.glb (~5 s)
+uv run --project pipeline pytest world/tests -q
+```
+
+The dev server serves `publish/` under `/dev-assets`; open
+`http://localhost:3000/explore?zone=elephant-care-centre`.
 
 ## Files
 
 | | |
 | --- | --- |
 | `data/vantara_area.osm` | Raw OpenStreetMap extract, 6 x 6 km around Vantara (ODbL) |
-| `data/site.json` | Outline, roads, water, rail in metres around Vantara's centre (X east, Y north) |
+| `data/site.json` | Outline, roads, water, rail in metres around Vantara's centre (x east, y north) |
+| `data/layout.json` | Designed zone layout (artistic interpretation) |
 | `scripts/osm_to_json.py` | `vantara_area.osm` -> `site.json` |
-| `scripts/build_site_base.py` | Builds the Blender scene from `site.json` (runs inside Blender) |
-| `data/layout.json` | Designed zone layout (artistic interpretation), from `design_layout.py` |
 | `scripts/design_layout.py` | Writes `layout.json`; checks everything sits inside the outline |
-| `scripts/build_zones.py` | Builds the zone blockouts from `layout.json` (runs inside Blender) |
-| `scripts/fetch_polyhaven.py` | Downloads the CC0 Poly Haven textures and models into `assets/` (not in git) |
-| `scripts/dress_zones.py` | Step 3 dressing: textures, building detail, water, fences, vegetation, animals (runs inside Blender) |
-| `scripts/export_web.py` | Step 4: exports the world for the web explorer to `publish/` (not in git) and renders the overview map |
-| `scripts/render_previews.py` | Renders every preview camera to `renders/` (runs inside Blender) |
-| `vantara_world.blend` | The scene (not in git; rebuild it with the scripts) |
-| `renders/` | Preview renders (not in git) |
+| `scripts/fetch_polyhaven.py` | Downloads the CC0 Poly Haven textures and plant models into `assets/` |
+| `scripts/compile_world.py` | The design rules: ground, buildings, water, planting, animals, places -> `world.json`, zone files, map |
+| `scripts/worldgeo.py` | 2D geometry helpers (offsets, clipping, seeded scatter) |
+| `scripts/overview_map.py` | The overview map as an SVG, from the same data |
+| `scripts/prepare_textures.py` | Web-size textures (OpenCV) |
+| `tools/build_plants.mjs` | Plant levels of detail with gltf-transform + meshoptimizer (leaf thinning for foliage) |
+| `tests/` | Compiler checks: deterministic, plants inside the site and off buildings, water cut out, basins slope down, assets exist |
+| `publish/`, `assets/` | Generated / downloaded (not in git) |
 
-## Rebuild
+## What's in it
 
-```bash
-uv run --project pipeline python world/scripts/osm_to_json.py
-cd pipeline
-uv run python -m vantara_pipeline.blender_bridge execute_code \
-  --code "exec(open('../world/scripts/build_site_base.py', encoding='utf-8').read())"
-```
+- Site: the mapped outline (1,104 x 324 m) on a 14 km ground, roads at real
+  widths, the Kanalus railway, lakes and streams, a 2.2 m perimeter wall; sun
+  for Jamnagar at 10:00 IST on 15 March (39.5 deg up, from the east-south-east).
+- Zones in the blocks formed by the real internal roads: Elephant Care
+  Centre (six shelters, sand yards and paddock, bathing pond, mud wallow,
+  hydrotherapy pool with an elephant ramp, kitchen), Wildlife Hospital, Big
+  Cat Rescue (ten enclosures and a large one), Herbivore Reserve (three
+  paddocks), entrance plaza, and a woodland where nothing is published.
+- Water as basins: sloped wet banks, a bed, a wet-mud shore band, water that is
+  clear and light at the edges and dark in the middle.
+- About 2,600 plants: a closed woodland canopy with understory, avenues along
+  the internal roads, shade in every yard, planted shores, rocks.
+- 9 CC0 placeholder animals (4 elephants, 3 tigers, 2 rhinos) walking short
+  loops in their yards.
 
-Needs Blender running with the MCP-for-Blender add-on connected (port 9876).
-The build replaces everything in the open file, so it should be the world file.
+## History
 
-## Step 1 (done): site base
-
-- Real-scale ground (10 km), Vantara's mapped outline (1,104 x 324 m) on
-  landscaped ground with a 2.2 m perimeter wall
-- Roads at real widths (tertiary 7 m, local 5-5.5 m, service 4 m), lakes,
-  streams, the Kanalus railway
-- Physical sky, with the sun placed for Jamnagar (22.33 N) at 10:00 IST on
-  15 March: 39.5 deg elevation, from the east-south-east
-- Aerial and south-gate cameras; label "artistic interpretation" with the
-  OpenStreetMap credit in the scene
-
-## Step 2 (done): zone blockouts
-
-`scripts/design_layout.py` -> `data/layout.json` -> `scripts/build_zones.py`.
-Zones sit in the blocks formed by the real internal roads; their contents are
-designed. Elephant Care Centre (shelters, sand yards and paddock, bathing
-pond, mud wallow, hydrotherapy pool, kitchen), Wildlife Hospital, Big Cat
-Rescue (10 fenced enclosures + a large one), Herbivore Reserve (3 paddocks),
-entrance plaza. The west wedge is left as woodland.
-
-```bash
-uv run --project pipeline python world/scripts/design_layout.py
-cd pipeline
-uv run python -m vantara_pipeline.blender_bridge execute_code   --code "exec(open('../world/scripts/build_zones.py', encoding='utf-8').read())"
-```
-
-## Step 3 (done): dressing
-
-CC0 Poly Haven textures on every surface, seeded scatter of trees, shrubs and
-boulders, windows/doors/parapets/rooftop plant on buildings, chain-link fences,
-water, and the CC0 placeholder animals in their zones. Assets: Poly Haven
-(polyhaven.com), CC0.
-
-```bash
-uv run --project pipeline python world/scripts/fetch_polyhaven.py
-cd pipeline
-uv run python -m vantara_pipeline.blender_bridge execute_code   --code "exec(open('C:/Users/mobol/Downloads/animals/world/scripts/dress_zones.py', encoding='utf-8').read())"
-uv run python -m vantara_pipeline.blender_bridge execute_code   --code "STEP='step3'; exec(open('C:/Users/mobol/Downloads/animals/world/scripts/render_previews.py', encoding='utf-8').read())"
-```
-
-Blender resolves relative paths from its own folder, so pass absolute paths.
-Rendering all cameras takes ~20 minutes on the laptop.
-
-## Step 4 (done): web export
-
-```bash
-cd pipeline
-uv run python -m vantara_pipeline.blender_bridge execute_code   --code "exec(open('C:/Users/mobol/Downloads/animals/world/scripts/export_web.py', encoding='utf-8').read())"
-```
-
-Writes `publish/world/` (manifest, glTF parts with shared textures,
-instanced plants with two levels of detail, collision mesh) and
-`publish/<zone>/<zone>.json` for each explorer zone, renders
-`web/public/map/overview.webp` and updates the map positions in `zones.json`
-(skip the render with `RENDER_MAP=False; ` before `exec`). The dev server
-serves `publish/` under `/dev-assets`; open `/explore?zone=elephant-care-centre`.
-About 12 MB in total.
-
-The manifest also lists every named place (labels, click-to-zoom, map dots,
-"walk here" standing points) and the solid buildings that hide labels.
+The world was first built in Blender (steps 1-4 in DEVLOG.md, 2026-10-17).
+The laptop's integrated GPU couldn't render the fuller scene, so on 2026-10-18
+the same design rules moved into `compile_world.py` and the browser, and the
+Blender scripts and files were removed (they remain in git history).

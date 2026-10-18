@@ -1,6 +1,6 @@
 # Vantara 3D – web
 
-Next.js (App Router) + TypeScript + React Three Fiber, rendering the Blender-built mesh world (`../world`).
+Next.js (App Router) + TypeScript + React Three Fiber, building the world from `../world` (world.json, textures, plants.glb) in the browser.
 
 ```bash
 pnpm install
@@ -65,5 +65,5 @@ floor. Locally published zones can carry their own `animals.json` beside their
 files.
 
 Models come from `web/public/models` in development, `NEXT_PUBLIC_MODEL_BASE`
-(CDN) in production; `src/content/animals.json` is written by the Blender
-script. Animals are lit by the world's sun and sky and cast real shadows.
+(CDN) in production; `src/content/animals.json` lists them (sizes, clips,
+credits) and is edited by hand when a model is added or swapped. Animals are lit by the world's sun and sky and cast real shadows.

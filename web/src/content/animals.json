@@ -1,5 +1,5 @@
 {
-  "$comment": "Written by pipeline/blender/prepare_animals.py. Sizes in metres; models face +Z.",
+  "$comment": "Animal models in web/public/models (edited by hand). Sizes in metres; models face +Z.",
   "animals": {
     "elephant": {
       "file": "elephant.glb",

@@ -110,7 +110,7 @@ export default function MapOverlay({
         </div>
 
         <p className="mt-2 text-[11px] text-neutral-500">
-          Top-down render of the 3D model (artistic interpretation). Outline, roads and water: © OpenStreetMap contributors.
+          Map drawn from the same data as the 3D model (artistic interpretation). Outline, roads and water: © OpenStreetMap contributors.
         </p>
 
         {local.length > 0 && (
