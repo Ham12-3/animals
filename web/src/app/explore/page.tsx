@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import Explorer from "@/components/explorer/ExplorerLoader";
 
-export const metadata = { title: "Explore · Vantara 3D" };
+export const metadata = { title: "Explore", description: "Walk, orbit or fly over the Vantara 3D model; click any name to fly there." };
 
 async function ExploreRoute({ searchParams }: { searchParams: PageProps<"/explore">["searchParams"] }) {
   const { zone, debug } = await searchParams;

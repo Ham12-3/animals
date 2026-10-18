@@ -49,9 +49,36 @@ function shadowTexture(): THREE.Texture {
   return new THREE.CanvasTexture(c);
 }
 
+/**
+ * Size a model as it loads: real height (spec.heightM), feet on y = 0, centred,
+ * turned by spec.yawDeg to face +Z. Measured on the posed, skinned mesh (precise
+ * bounds), so any downloaded GLB works without being edited first.
+ */
+function fitModel(model: THREE.Object3D, spec: AnimalSpec) {
+  model.updateMatrixWorld(true);
+  const box = new THREE.Box3().setFromObject(model, true);
+  const size = box.getSize(new THREE.Vector3());
+  const centre = box.getCenter(new THREE.Vector3());
+  const s = size.y > 1e-6 ? spec.heightM / size.y : 1;
+  model.scale.multiplyScalar(s);
+  model.position.set(-centre.x * s, -box.min.y * s, -centre.z * s);
+  const holder = new THREE.Group();
+  holder.add(model);
+  const yaw = THREE.MathUtils.degToRad(spec.yawDeg ?? 0);
+  holder.rotation.y = yaw;
+  const sideways = Math.abs(Math.sin(yaw)) > 0.7;
+  return {
+    holder,
+    length: (sideways ? size.x : size.z) * s,
+    width: (sideways ? size.z : size.x) * s,
+  };
+}
+
 interface Actor {
   root: THREE.Group;
+  /** Holder of the sized model: the procedural gait moves this. */
   model: THREE.Object3D;
+  length: number;
   shadow: THREE.Mesh;
   mixer: THREE.AnimationMixer;
   actions: Map<string, THREE.AnimationAction>;
@@ -102,8 +129,9 @@ function AnimalActor({
         o.castShadow = sceneLit; // a lit mesh world has real sun shadows
       }
     });
+    const fit = fitModel(model, spec);
     const root = new THREE.Group();
-    root.add(model);
+    root.add(fit.holder);
     const [x, z] = placement.path[0];
     const next = placement.path[1] ?? placement.path[0];
     root.position.set(x, groundY, z);
@@ -113,7 +141,7 @@ function AnimalActor({
     const shadowMat = new THREE.MeshBasicMaterial({ map: shadowTexture(), transparent: true, depthWrite: false });
     const shadow = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), shadowMat);
     shadow.rotation.x = -Math.PI / 2;
-    shadow.scale.set(spec.widthM * 1.5, spec.lengthM * 1.15, 1);
+    shadow.scale.set(fit.width * 1.5, fit.length * 1.15, 1);
     shadow.renderOrder = 1;
     shadow.visible = !sceneLit;
     scene.add(root, shadow);
@@ -122,7 +150,7 @@ function AnimalActor({
     const actions = new Map(gltf.animations.map((clip) => [clip.name, mixer.clipAction(clip)]));
     const rng = seeded(seed);
     actorRef.current = {
-      root, model, shadow, mixer, actions, playing: null, mode: "idle",
+      root, model: fit.holder, length: fit.length, shadow, mixer, actions, playing: null, mode: "idle",
       timer: 1 + rng() * 3, target: 1 % placement.path.length, yaw, phase: rng() * 6, clock: 0, rng,
     };  // fmt: skip
     return () => {
@@ -197,7 +225,7 @@ function AnimalActor({
     // No walk clip (placeholders): a simple gait so movement isn't a slide.
     // No clips at all: slow breathing while idle.
     if (moving && !spec.walkClip) {
-      a.phase += dt * (2 * Math.PI * spec.walkSpeed) / Math.max(0.6, spec.lengthM * 0.45);
+      a.phase += dt * (2 * Math.PI * spec.walkSpeed) / Math.max(0.6, a.length * 0.45);
       a.model.position.y = Math.abs(Math.sin(a.phase)) * 0.02 * spec.heightM;
       a.model.rotation.z = Math.sin(a.phase) * 0.025;
     } else {

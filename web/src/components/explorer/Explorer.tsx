@@ -499,6 +499,11 @@ export default function Explorer({ initialZone, debug }: { initialZone?: string;
           <div className="mt-3 space-y-1 text-[11px] text-neutral-500">
             <p>{worldOnScreen?.manifest.note}</p>
             {worldOnScreen?.manifest.attribution.map((a) => <p key={a}>{a}</p>)}
+            <p>
+              <a href="/credits" className="underline">
+                All credits
+              </a>
+            </p>
           </div>
         </div>
       )}

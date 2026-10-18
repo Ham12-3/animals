@@ -14,6 +14,8 @@ export interface AnimalSpec {
   idleClip: string | null;
   walkClip: string | null;
   extraClips: string[];
+  /** Turn (degrees about up) that makes the model face +Z; the explorer sizes it to heightM. */
+  yawDeg?: number;
   placeholder: boolean;
   credit: string;
 }

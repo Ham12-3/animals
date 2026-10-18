@@ -13,6 +13,8 @@ export interface BuiltWorld {
   collision: CollisionWorld;
   plants: PlantField;
   stats: { meshes: number; triangles: number; collisionTriangles: number; plants: number };
+  /** Per-frame animation (drifting water ripples). */
+  tick: (dt: number) => void;
 }
 
 // Built once per session and shared by every zone of the world.
@@ -38,7 +40,7 @@ async function build(url: string, manifest: WorldManifest, onProgress: (p: numbe
     manager.onLoad = resolve;
     manager.onError = (u) => reject(new Error(`Could not load ${u}`));
   });
-  const materials = createMaterials(manifest, base, manager);
+  const { materials, ripples } = createMaterials(manifest, base, manager);
   const loader = new GLTFLoader(manager).setMeshoptDecoder(MeshoptDecoder);
   const plantsGltf = loader.loadAsync(base + manifest.assets.plants);
 
@@ -111,5 +113,9 @@ async function build(url: string, manifest: WorldManifest, onProgress: (p: numbe
     collision,
     plants,
     stats: { meshes: builders.size, triangles, collisionTriangles: collision.geometry.getAttribute("position").count / 3, plants: plantCount },
+    tick: (dt) => {
+      ripples.offset.x = (ripples.offset.x + dt * 0.012) % 1;
+      ripples.offset.y = (ripples.offset.y + dt * 0.007) % 1;
+    },
   };
 }

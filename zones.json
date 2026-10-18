@@ -19,7 +19,7 @@
       "videos": [],
       "map": { "x": 0.386, "y": 0.487 },
       "animals": ["elephant"],
-      "status": "awaiting-footage"
+      "status": "live"
     },
     {
       "id": "big-cat-rescue",
@@ -28,7 +28,7 @@
       "videos": [],
       "map": { "x": 0.71, "y": 0.491 },
       "animals": ["tiger", "lion"],
-      "status": "awaiting-footage"
+      "status": "live"
     },
     {
       "id": "herbivore-reserve",
@@ -37,7 +37,7 @@
       "videos": [],
       "map": { "x": 0.874, "y": 0.494 },
       "animals": ["rhino"],
-      "status": "awaiting-footage"
+      "status": "live"
     },
     {
       "id": "wildlife-hospital",
@@ -46,7 +46,7 @@
       "videos": [],
       "map": { "x": 0.605, "y": 0.449 },
       "animals": [],
-      "status": "awaiting-footage"
+      "status": "live"
     }
   ]
 }

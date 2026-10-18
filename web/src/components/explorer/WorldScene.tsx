@@ -153,6 +153,7 @@ export default function WorldScene({
         sun.shadow.needsUpdate = true;
       }
     }
+    built.tick(dt);
     lodTimerRef.current += dt;
     if (lodTimerRef.current > LOD_INTERVAL) {
       lodTimerRef.current = 0;

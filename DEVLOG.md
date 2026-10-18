@@ -279,3 +279,32 @@ Read the current docs (threejs.org/docs, r186) before building:
 - Checks: 12 world tests, 22 pipeline tests, web typecheck and lint pass; in
   the browser the world loads with every asset 200 and the map overlay shows
   the vector map with zone and place dots in place.
+
+### Polish: water, animals tool, site pages
+- Pond and lake water no longer mirror the sky: a physical material with
+  lower reflectance and more roughness, murkier colours, and a generated,
+  tileable ripple normal map that drifts slowly (`BuiltWorld.tick`).
+- Animals: `world/tools/build_animals.mjs` (gltf-transform + sharp:
+  textures to 1024 px WebP, unused data removed, meshopt) for the planned
+  CC-BY Sketchfab set. The explorer now sizes each animal when it loads
+  (precise skinned bounds -> `heightM`, feet on the ground, `yawDeg` to face
+  +Z), which is safe for rigged models and keeps the placeholders unchanged.
+  The Sketchfab files weren't downloaded; the placeholders stay for now.
+- Site: home page with the vector map and an Explore link on every zone; new
+  `/credits` page (map data, Poly Haven assets, animals, software); footer
+  with OpenStreetMap credit and a Credits link; page metadata (title
+  template, Open Graph, theme colour). The four zones are now `live` in
+  zones.json (production shows only live zones).
+
+### Deploy preparation (nothing deployed, nothing pushed)
+- `web/scripts/upload-assets.mjs` (`pnpm assets:upload`): uploads only an
+  allow-list built from world.json, zones.json and animals.json (28 files,
+  7.2 MB) to a public Vercel Blob store at fixed, versioned paths (`v1/`),
+  cached for a year; refuses anything outside `world/publish` and
+  `public/models` (so the private test footage in `pipeline/work` can't go),
+  symlinks and unknown file types; never prints the token. `--dry-run` lists
+  the files; after uploading it checks CORS.
+- CORS fallback: with `ASSET_ORIGIN` set, next.config.ts serves the Blob
+  files from the site's own origin under `/assets` (validated https origin).
+- Draco decoder copy removed (the world uses meshopt now).
+- Deploy steps in `web/README.md`. Production build passes.

@@ -43,5 +43,3 @@ next-env.d.ts
 # generated from ../zones.json by scripts/sync-data.mjs
 /src/data/
 
-# copied from three by scripts/sync-data.mjs
-/public/draco/

@@ -110,19 +110,20 @@ MATERIALS = {
     "rooftop_plant": dict(color=[0.55, 0.56, 0.55], roughness=0.5, metalness=0.3),
     "trim": dict(color=[0.55, 0.53, 0.5], roughness=0.8),
     "pool_shell": dict(color=[0.58, 0.72, 0.76], roughness=0.35),
-    "pond_water": dict(vertexColors=True, transparent=True, roughness=0.09, water=True),
-    "mud_water": dict(vertexColors=True, transparent=True, roughness=0.25, water=True),
-    "lake_water": dict(vertexColors=True, transparent=True, roughness=0.09, water=True),
-    "pool_water": dict(vertexColors=True, transparent=True, roughness=0.04, water=True, color=[0.30, 0.62, 0.66], opacity=0.5),
+    # Water: rippled (normal map every `tile` m), matt enough that the sky doesn't mirror in it.
+    "pond_water": dict(vertexColors=True, transparent=True, roughness=0.16, water=True, tile=6.0),
+    "mud_water": dict(vertexColors=True, transparent=True, roughness=0.3, water=True, tile=6.0),
+    "lake_water": dict(vertexColors=True, transparent=True, roughness=0.14, water=True, tile=9.0),
+    "pool_water": dict(vertexColors=True, transparent=True, roughness=0.06, water=True, tile=3.0, color=[0.30, 0.62, 0.66], opacity=0.55),
 }  # fmt: skip
 
 # Water bodies: level below the ground, bed depth, bank width, shore band (m),
 # shallow/deep colour + opacity (linear RGBA).
 WATER = {
-    "pond": dict(drop=0.3, depth=1.6, bank=3.5, band=1.8, shallow=(0.30, 0.27, 0.16, 0.45), deep=(0.05, 0.08, 0.05, 0.93)),
-    "bathing": dict(drop=0.3, depth=2.2, bank=6.0, band=1.8, shallow=(0.32, 0.28, 0.17, 0.4), deep=(0.06, 0.08, 0.05, 0.94)),
+    "pond": dict(drop=0.3, depth=1.6, bank=3.5, band=1.8, shallow=(0.26, 0.24, 0.14, 0.62), deep=(0.06, 0.09, 0.05, 0.97)),
+    "bathing": dict(drop=0.3, depth=2.2, bank=6.0, band=1.8, shallow=(0.28, 0.25, 0.15, 0.6), deep=(0.07, 0.09, 0.05, 0.97)),
     "mud": dict(drop=0.12, depth=0.45, bank=2.5, band=1.8, shallow=(0.17, 0.12, 0.08, 1.0), deep=(0.13, 0.09, 0.06, 1.0)),
-    "lake": dict(drop=0.35, depth=3.0, bank=8.0, band=4.0, shallow=(0.26, 0.27, 0.18, 0.5), deep=(0.02, 0.06, 0.06, 0.95)),
+    "lake": dict(drop=0.35, depth=3.0, bank=8.0, band=4.0, shallow=(0.24, 0.26, 0.17, 0.62), deep=(0.03, 0.07, 0.07, 0.97)),
 }  # fmt: skip
 POOL = dict(drop=0.25, depth=2.0, ramp=12.0, water=(0.30, 0.62, 0.66, 0.5))
 

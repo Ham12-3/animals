@@ -40,15 +40,43 @@ How it fits together (`src/components/explorer/`):
 
 ### Asset hosting
 
-Set `NEXT_PUBLIC_ASSET_BASE` to the CDN / Vercel Blob folder that holds
-`<zone>/<files>` (Phase 8). A zone appears on the map once its `status` in
-zones.json is `"live"`.
+The 3D assets (~7 MB: `world/world.json`, `world/plants.glb`,
+`world/textures/*`, `<zone>/<zone>.json`, `models/*.glb`) are not part of the
+app. In production they come from a public Vercel Blob store:
+`NEXT_PUBLIC_ASSET_BASE` points at the folder holding `world/` and the zone
+folders, `NEXT_PUBLIC_MODEL_BASE` at the one holding the animal GLBs. A zone
+appears on the map once its `status` in zones.json is `"live"`.
 
-In development, without that variable, assets are served from
-`../pipeline/work/<zone>/publish/` by the dev-only `/dev-assets` route (it
-returns 404 in production builds). Zones published only on your machine show up
-on the map under "Published on this machine". They can carry their own
-`hotspots.json` beside the published files.
+In development, without those variables, assets are served from
+`../world/publish/` (and `../pipeline/work/<zone>/publish/`) by the dev-only
+`/dev-assets` route, and models from `public/models`. The route returns 404 in
+production builds.
+
+## Deploy (Vercel + Vercel Blob)
+
+1. Build the world (`../world/README.md`): `world/publish/` must be current.
+2. Vercel project: import the repo, Root Directory `web` (the build copies
+   `../zones.json`, so keep "include files outside the root directory" on).
+3. Create a Blob store connected to the project, then in `web/`:
+
+   ```bash
+   vercel env pull                                # writes BLOB_READ_WRITE_TOKEN to .env.local
+   pnpm assets:upload -- --dry-run                # what would go up
+   node --env-file=.env.local scripts/upload-assets.mjs --version v1
+   ```
+
+   The script uploads only what the explorer loads (an allow-list built from
+   world.json, zones.json and animals.json; nothing outside `world/publish`
+   and `public/models`), at fixed paths under `v1/`, cached for a year. Use
+   `v2/` next time instead of overwriting.
+4. Set the variables it prints in Vercel (Preview and Production). It checks
+   whether Blob allows cross-origin loads (three.js needs it for textures):
+   - if yes: `NEXT_PUBLIC_ASSET_BASE=https://<store>.public.blob.vercel-storage.com/v1`,
+     `NEXT_PUBLIC_MODEL_BASE=…/v1/models`;
+   - if not: `ASSET_ORIGIN=https://<store>.public.blob.vercel-storage.com`,
+     `NEXT_PUBLIC_ASSET_BASE=/assets/v1`, `NEXT_PUBLIC_MODEL_BASE=/assets/v1/models`
+     (next.config.ts then serves the Blob files from this site's own origin).
+5. Deploy a preview (a pull request), check the explorer, then promote.
 
 ### Debug (`?debug`)
 
