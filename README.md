@@ -2,7 +2,7 @@
 
 A walkable web explorer of Vantara (animal rescue and reserve, Jamnagar, India),
 compiled from open map data and a designed layout, and built into 3D in the
-browser. No Blender. Runs on an integrated-graphics laptop (60 fps on an
+browser. Runs on an integrated-graphics laptop (60 fps on an
 Iris Xe).
 
 > **Unofficial fan-made model.** An artistic interpretation, not surveyed. Not
@@ -31,7 +31,7 @@ ship from a CDN / Vercel Blob.
 | Step | What | State |
 | --- | --- | --- |
 | 1 | Project setup, web explorer (walk, orbit, flyover) | done |
-| 2 | World from map data: 6 zones, water basins, ~2,600 plants (first in Blender, now compiled without it) | done |
+| 2 | World from map data: 6 zones, water basins, ~2,600 plants | done |
 | 3 | Built in the browser (batched plants with levels of detail, billboards, collision) | done |
 | 4 | Place labels, click to fly, overview map | done |
 | 5 | Animated animals | done with CC0 placeholders (realistic models to swap in) |

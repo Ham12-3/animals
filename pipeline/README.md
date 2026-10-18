@@ -163,10 +163,8 @@ into the web app.
 
 ## Phase 7: animals
 
-The animal GLBs in `web/public/models/` were prepared once in Blender (rest
-pose, real height, feet on the ground, facing glTF +Z, every action as a
-clip). Blender has since been removed from the project (see DEVLOG.md,
-2026-10-18); the script is in git history. A replacement model must already
+The animal GLBs in `web/public/models/` are ready-made GLBs (rest pose, real
+height, feet on the ground, facing glTF +Z, every action as a clip). A replacement model must already
 be a GLB in that form; `web/src/content/animals.json` (sizes, clips,
 idle/walk clip names, credits) is edited by hand.
 

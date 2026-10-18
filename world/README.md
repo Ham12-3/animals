@@ -1,8 +1,8 @@
 # Vantara world: artistic interpretation
 
 Vantara built from open map data and a designed layout, compiled with plain
-Python and built into 3D in the browser. No Blender, no heavy rendering on the
-machine that builds it.
+Python and built into 3D in the browser. No heavy rendering on the machine that
+builds it.
 
 > **Artistic interpretation.** Only Vantara's outline, the surrounding roads,
 > water and railway come from map data. Everything inside the site (enclosures,
@@ -79,10 +79,3 @@ The dev server serves `publish/` under `/dev-assets`; open
   the internal roads, shade in every yard, planted shores, rocks.
 - 9 CC0 placeholder animals (4 elephants, 3 tigers, 2 rhinos) walking short
   loops in their yards.
-
-## History
-
-The world was first built in Blender (steps 1-4 in DEVLOG.md, 2026-10-17).
-The laptop's integrated GPU couldn't render the fuller scene, so on 2026-10-18
-the same design rules moved into `compile_world.py` and the browser, and the
-Blender scripts and files were removed (they remain in git history).

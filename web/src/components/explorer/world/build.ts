@@ -7,7 +7,7 @@ import { basin, box, gable, GeometryBuilder, polygon, prism, ribbon, shoreWall, 
 import { createMaterials } from "./materials";
 import { PlantField } from "./plants";
 
-/** The world built in the browser from world.json (no Blender). */
+/** The world built in the browser from world.json. */
 export interface BuiltWorld {
   group: THREE.Group;
   collision: CollisionWorld;

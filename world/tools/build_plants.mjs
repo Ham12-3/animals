@@ -1,4 +1,4 @@
-// Plant models for the web world, without Blender.
+// Plant models for the web world.
 //
 //   cd world/tools && pnpm install && node build_plants.mjs
 //   (run world/scripts/prepare_textures.py first: it stages the 512 px textures)

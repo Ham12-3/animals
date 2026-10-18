@@ -1,4 +1,4 @@
-// Animal models for the web, without Blender.
+// Animal models for the web.
 //
 //   cd world/tools && node build_animals.mjs            # sources: web/public/models/source/sketchfab/<name>.glb
 //   node build_animals.mjs --src <dir> --out <dir>      # other folders (e.g. a dry run)

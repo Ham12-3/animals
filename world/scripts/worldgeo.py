@@ -1,4 +1,4 @@
-"""2D geometry helpers for the world compiler (plain Python, no Blender).
+"""2D geometry helpers for the world compiler (plain Python).
 
 Coordinates are local metres around Vantara's centre, x east and y north (the
 frame of site.json and layout.json). compile_world.py converts to the

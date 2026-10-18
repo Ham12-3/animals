@@ -1,4 +1,4 @@
-"""Web textures for the world, without Blender (OpenCV only).
+"""Web textures for the world (OpenCV only).
 
     uv run --project pipeline python world/scripts/prepare_textures.py
 

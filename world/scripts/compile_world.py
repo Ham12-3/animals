@@ -3,7 +3,7 @@
     uv run --project pipeline python world/scripts/compile_world.py
 
 Reads world/data/site.json (OpenStreetMap outline, roads, water, railway) and
-world/data/layout.json (the designed zones) and writes, with no Blender:
+world/data/layout.json (the designed zones) and writes:
 
     world/publish/world/world.json      every surface, building, fence, water
                                         basin, plant and animal as simple
@@ -235,7 +235,7 @@ class World:
                               "holes": [poly_xz(h) for h in holes]})  # fmt: skip
 
     def box(self, material, centre, along, w, d, y0, y1):
-        rot = math.atan2(along[1], along[0])  # rotation about Blender z == three.js y
+        rot = math.atan2(along[1], along[0])  # rotation about the vertical (three.js y)
         self.boxes.setdefault(material, []).append(
             [round(centre[0], 3), round(-centre[1], 3), round(rot, 4), round(w, 3), round(d, 3), round(y0, 3), round(y1, 3)]
         )

@@ -1,7 +1,7 @@
 {
   "name": "vantara-world-tools",
   "private": true,
-  "description": "Blender-free asset prep for the web world (plant model levels of detail).",
+  "description": "Asset prep for the web world (plant model levels of detail).",
   "type": "module",
   "scripts": {
     "plants": "node build_plants.mjs"
