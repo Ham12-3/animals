@@ -1,0 +1,9 @@
+{
+  "$comment": "Animals per zone. path = waypoints [x, z] on the ground in the zone's published frame (metres); animals walk between them in a loop and idle at each. Use ?debug + H in the explorer to read positions.",
+  "zones": {
+    "elephant-care-centre": [],
+    "big-cat-rescue": [],
+    "herbivore-reserve": [],
+    "wildlife-hospital": []
+  }
+}

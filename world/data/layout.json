@@ -1,0 +1,2209 @@
+{
+ "note": "Artistic interpretation: designed layout inside Vantara's mapped outline, not surveyed.",
+ "attribution": "Map data \u00a9 OpenStreetMap contributors, ODbL 1.0 (openstreetmap.org/copyright)",
+ "zones": [
+  {
+   "id": "elephant-care-centre",
+   "name": "Elephant Care Centre",
+   "area": [
+    [
+     -365,
+     -122
+    ],
+    [
+     2,
+     -122
+    ],
+    [
+     2,
+     138
+    ],
+    [
+     -362,
+     133
+    ]
+   ],
+   "items": [
+    {
+     "type": "building",
+     "name": "Elephant kitchen",
+     "footprint": [
+      [
+       -65.0,
+       -109.0
+      ],
+      [
+       -15.0,
+       -109.0
+      ],
+      [
+       -15.0,
+       -81.0
+      ],
+      [
+       -65.0,
+       -81.0
+      ]
+     ],
+     "height": 9.0,
+     "roof": "gable",
+     "material": "building"
+    },
+    {
+     "type": "building",
+     "name": "Elephant care office",
+     "footprint": [
+      [
+       -43.0,
+       105.0
+      ],
+      [
+       -17.0,
+       105.0
+      ],
+      [
+       -17.0,
+       119.0
+      ],
+      [
+       -43.0,
+       119.0
+      ]
+     ],
+     "height": 5.0,
+     "roof": "flat",
+     "material": "building"
+    },
+    {
+     "type": "water",
+     "name": "Hydrotherapy pool",
+     "polygon": [
+      [
+       -80.0,
+       31.0
+      ],
+      [
+       -40.0,
+       31.0
+      ],
+      [
+       -40.0,
+       49.0
+      ],
+      [
+       -80.0,
+       49.0
+      ]
+     ],
+     "kind": "pool"
+    },
+    {
+     "type": "surface",
+     "name": "Pool deck",
+     "polygon": [
+      [
+       -86.0,
+       25.0
+      ],
+      [
+       -34.0,
+       25.0
+      ],
+      [
+       -34.0,
+       55.0
+      ],
+      [
+       -86.0,
+       55.0
+      ]
+     ],
+     "material": "paving"
+    },
+    {
+     "type": "water",
+     "name": "Bathing pond",
+     "polygon": [
+      [
+       -110.66,
+       -45.0
+      ],
+      [
+       -114.31,
+       -35.99
+      ],
+      [
+       -128.62,
+       -30.74
+      ],
+      [
+       -139.02,
+       -25.32
+      ],
+      [
+       -151.69,
+       -19.47
+      ],
+      [
+       -167.73,
+       -21.26
+      ],
+      [
+       -180.31,
+       -25.94
+      ],
+      [
+       -196.18,
+       -28.55
+      ],
+      [
+       -208.44,
+       -35.45
+      ],
+      [
+       -206.66,
+       -45.0
+      ],
+      [
+       -204.52,
+       -53.78
+      ],
+      [
+       -202.16,
+       -64.16
+      ],
+      [
+       -187.02,
+       -70.35
+      ],
+      [
+       -168.36,
+       -70.68
+      ],
+      [
+       -151.06,
+       -72.47
+      ],
+      [
+       -132.31,
+       -70.98
+      ],
+      [
+       -122.64,
+       -61.98
+      ],
+      [
+       -118.22,
+       -53.24
+      ]
+     ],
+     "kind": "pond"
+    },
+    {
+     "type": "water",
+     "name": "Mud wallow",
+     "polygon": [
+      [
+       -272.58,
+       -70.0
+      ],
+      [
+       -275.35,
+       -66.09
+      ],
+      [
+       -279.27,
+       -63.4
+      ],
+      [
+       -282.29,
+       -60.2
+      ],
+      [
+       -287.31,
+       -58.82
+      ],
+      [
+       -292.26,
+       -60.58
+      ],
+      [
+       -296.5,
+       -61.74
+      ],
+      [
+       -301.4,
+       -62.98
+      ],
+      [
+       -303.19,
+       -66.48
+      ],
+      [
+       -302.58,
+       -70.0
+      ],
+      [
+       -303.54,
+       -73.61
+      ],
+      [
+       -302.25,
+       -77.54
+      ],
+      [
+       -297.29,
+       -79.26
+      ],
+      [
+       -292.52,
+       -80.49
+      ],
+      [
+       -287.06,
+       -82.25
+      ],
+      [
+       -281.5,
+       -80.8
+      ],
+      [
+       -278.42,
+       -77.13
+      ],
+      [
+       -275.0,
+       -74.0
+      ]
+     ],
+     "kind": "mud"
+    },
+    {
+     "type": "surface",
+     "name": "Elephant paddock (sand)",
+     "polygon": [
+      [
+       -350.0,
+       -107.5
+      ],
+      [
+       -80.0,
+       -107.5
+      ],
+      [
+       -80.0,
+       -2.5
+      ],
+      [
+       -350.0,
+       -2.5
+      ]
+     ],
+     "material": "sand"
+    },
+    {
+     "type": "fence",
+     "name": "Elephant paddock fence",
+     "points": [
+      [
+       -350.0,
+       -107.5
+      ],
+      [
+       -80.0,
+       -107.5
+      ],
+      [
+       -80.0,
+       -2.5
+      ],
+      [
+       -350.0,
+       -2.5
+      ]
+     ],
+     "height": 2.4,
+     "style": "post_rail",
+     "closed": true
+    },
+    {
+     "type": "shed",
+     "name": "Elephant shelter 1",
+     "footprint": [
+      [
+       -335.0,
+       101.0
+      ],
+      [
+       -265.0,
+       101.0
+      ],
+      [
+       -265.0,
+       119.0
+      ],
+      [
+       -335.0,
+       119.0
+      ]
+     ],
+     "height": 8.0
+    },
+    {
+     "type": "shed",
+     "name": "Elephant shelter 2",
+     "footprint": [
+      [
+       -250.0,
+       101.0
+      ],
+      [
+       -180.0,
+       101.0
+      ],
+      [
+       -180.0,
+       119.0
+      ],
+      [
+       -250.0,
+       119.0
+      ]
+     ],
+     "height": 8.0
+    },
+    {
+     "type": "shed",
+     "name": "Elephant shelter 3",
+     "footprint": [
+      [
+       -165.0,
+       101.0
+      ],
+      [
+       -95.0,
+       101.0
+      ],
+      [
+       -95.0,
+       119.0
+      ],
+      [
+       -165.0,
+       119.0
+      ]
+     ],
+     "height": 8.0
+    },
+    {
+     "type": "shed",
+     "name": "Elephant shelter 4",
+     "footprint": [
+      [
+       -335.0,
+       63.0
+      ],
+      [
+       -265.0,
+       63.0
+      ],
+      [
+       -265.0,
+       81.0
+      ],
+      [
+       -335.0,
+       81.0
+      ]
+     ],
+     "height": 8.0
+    },
+    {
+     "type": "shed",
+     "name": "Elephant shelter 5",
+     "footprint": [
+      [
+       -250.0,
+       63.0
+      ],
+      [
+       -180.0,
+       63.0
+      ],
+      [
+       -180.0,
+       81.0
+      ],
+      [
+       -250.0,
+       81.0
+      ]
+     ],
+     "height": 8.0
+    },
+    {
+     "type": "shed",
+     "name": "Elephant shelter 6",
+     "footprint": [
+      [
+       -165.0,
+       63.0
+      ],
+      [
+       -95.0,
+       63.0
+      ],
+      [
+       -95.0,
+       81.0
+      ],
+      [
+       -165.0,
+       81.0
+      ]
+     ],
+     "height": 8.0
+    },
+    {
+     "type": "surface",
+     "name": "Shelter yards (sand)",
+     "polygon": [
+      [
+       -350.0,
+       62.0
+      ],
+      [
+       -80.0,
+       62.0
+      ],
+      [
+       -80.0,
+       120.0
+      ],
+      [
+       -350.0,
+       120.0
+      ]
+     ],
+     "material": "sand"
+    }
+   ]
+  },
+  {
+   "id": "wildlife-hospital",
+   "name": "Wildlife Hospital",
+   "area": [
+    [
+     24,
+     -38
+    ],
+    [
+     135,
+     -38
+    ],
+    [
+     137,
+     118
+    ],
+    [
+     26,
+     118
+    ]
+   ],
+   "items": [
+    {
+     "type": "building",
+     "name": "Hospital main block",
+     "footprint": [
+      [
+       40.0,
+       22.5
+      ],
+      [
+       120.0,
+       22.5
+      ],
+      [
+       120.0,
+       67.5
+      ],
+      [
+       40.0,
+       67.5
+      ]
+     ],
+     "height": 11.0,
+     "roof": "flat",
+     "material": "hospital"
+    },
+    {
+     "type": "building",
+     "name": "Surgery and ICU wing",
+     "footprint": [
+      [
+       55.0,
+       -15.0
+      ],
+      [
+       105.0,
+       -15.0
+      ],
+      [
+       105.0,
+       5.0
+      ],
+      [
+       55.0,
+       5.0
+      ]
+     ],
+     "height": 7.0,
+     "roof": "flat",
+     "material": "hospital"
+    },
+    {
+     "type": "building",
+     "name": "Recovery ward A",
+     "footprint": [
+      [
+       30.0,
+       90.0
+      ],
+      [
+       60.0,
+       90.0
+      ],
+      [
+       60.0,
+       106.0
+      ],
+      [
+       30.0,
+       106.0
+      ]
+     ],
+     "height": 5.0,
+     "roof": "flat",
+     "material": "hospital"
+    },
+    {
+     "type": "building",
+     "name": "Recovery ward B",
+     "footprint": [
+      [
+       100.0,
+       90.0
+      ],
+      [
+       130.0,
+       90.0
+      ],
+      [
+       130.0,
+       106.0
+      ],
+      [
+       100.0,
+       106.0
+      ]
+     ],
+     "height": 5.0,
+     "roof": "flat",
+     "material": "hospital"
+    },
+    {
+     "type": "shed",
+     "name": "Ambulance bay",
+     "footprint": [
+      [
+       112.0,
+       -31.0
+      ],
+      [
+       132.0,
+       -31.0
+      ],
+      [
+       132.0,
+       -21.0
+      ],
+      [
+       112.0,
+       -21.0
+      ]
+     ],
+     "height": 5.0
+    },
+    {
+     "type": "surface",
+     "name": "Hospital parking",
+     "polygon": [
+      [
+       29.0,
+       -34.0
+      ],
+      [
+       55.0,
+       -34.0
+      ],
+      [
+       55.0,
+       -10.0
+      ],
+      [
+       29.0,
+       -10.0
+      ]
+     ],
+     "material": "asphalt"
+    },
+    {
+     "type": "surface",
+     "name": "Hospital forecourt",
+     "polygon": [
+      [
+       40.0,
+       7.0
+      ],
+      [
+       120.0,
+       7.0
+      ],
+      [
+       120.0,
+       21.0
+      ],
+      [
+       40.0,
+       21.0
+      ]
+     ],
+     "material": "paving"
+    }
+   ]
+  },
+  {
+   "id": "entrance",
+   "name": "Entrance plaza",
+   "area": [
+    [
+     60,
+     -155
+    ],
+    [
+     145,
+     -156
+    ],
+    [
+     145,
+     -128
+    ],
+    [
+     60,
+     -127
+    ]
+   ],
+   "items": [
+    {
+     "type": "surface",
+     "name": "Entrance plaza",
+     "polygon": [
+      [
+       62.0,
+       -153.0
+      ],
+      [
+       142.0,
+       -153.0
+      ],
+      [
+       142.0,
+       -129.0
+      ],
+      [
+       62.0,
+       -129.0
+      ]
+     ],
+     "material": "paving"
+    },
+    {
+     "type": "building",
+     "name": "Gatehouse",
+     "footprint": [
+      [
+       63.0,
+       -144.0
+      ],
+      [
+       77.0,
+       -144.0
+      ],
+      [
+       77.0,
+       -136.0
+      ],
+      [
+       63.0,
+       -136.0
+      ]
+     ],
+     "height": 4.0,
+     "roof": "gable",
+     "material": "building"
+    },
+    {
+     "type": "building",
+     "name": "Visitor centre",
+     "footprint": [
+      [
+       124.0,
+       -146.0
+      ],
+      [
+       142.0,
+       -146.0
+      ],
+      [
+       142.0,
+       -134.0
+      ],
+      [
+       124.0,
+       -134.0
+      ]
+     ],
+     "height": 5.0,
+     "roof": "gable",
+     "material": "building"
+    }
+   ]
+  },
+  {
+   "id": "big-cat-rescue",
+   "name": "Big Cat Rescue",
+   "area": [
+    [
+     145,
+     -122
+    ],
+    [
+     265,
+     -122
+    ],
+    [
+     267,
+     128
+    ],
+    [
+     147,
+     128
+    ]
+   ],
+   "items": [
+    {
+     "type": "surface",
+     "name": "Big cat enclosure 1 (grass)",
+     "polygon": [
+      [
+       149.0,
+       -117.0
+      ],
+      [
+       199.0,
+       -117.0
+      ],
+      [
+       199.0,
+       -75.0
+      ],
+      [
+       149.0,
+       -75.0
+      ]
+     ],
+     "material": "grass_wild"
+    },
+    {
+     "type": "fence",
+     "name": "Big cat enclosure 1 fence",
+     "points": [
+      [
+       149.0,
+       -117.0
+      ],
+      [
+       199.0,
+       -117.0
+      ],
+      [
+       199.0,
+       -75.0
+      ],
+      [
+       149.0,
+       -75.0
+      ]
+     ],
+     "height": 5.0,
+     "style": "mesh",
+     "closed": true
+    },
+    {
+     "type": "building",
+     "name": "Night house 1",
+     "footprint": [
+      [
+       151.0,
+       -82.0
+      ],
+      [
+       163.0,
+       -82.0
+      ],
+      [
+       163.0,
+       -76.0
+      ],
+      [
+       151.0,
+       -76.0
+      ]
+     ],
+     "height": 3.5,
+     "roof": "flat",
+     "material": "building"
+    },
+    {
+     "type": "surface",
+     "name": "Big cat enclosure 2 (grass)",
+     "polygon": [
+      [
+       149.0,
+       -69.0
+      ],
+      [
+       199.0,
+       -69.0
+      ],
+      [
+       199.0,
+       -27.0
+      ],
+      [
+       149.0,
+       -27.0
+      ]
+     ],
+     "material": "grass_wild"
+    },
+    {
+     "type": "fence",
+     "name": "Big cat enclosure 2 fence",
+     "points": [
+      [
+       149.0,
+       -69.0
+      ],
+      [
+       199.0,
+       -69.0
+      ],
+      [
+       199.0,
+       -27.0
+      ],
+      [
+       149.0,
+       -27.0
+      ]
+     ],
+     "height": 5.0,
+     "style": "mesh",
+     "closed": true
+    },
+    {
+     "type": "building",
+     "name": "Night house 2",
+     "footprint": [
+      [
+       151.0,
+       -34.0
+      ],
+      [
+       163.0,
+       -34.0
+      ],
+      [
+       163.0,
+       -28.0
+      ],
+      [
+       151.0,
+       -28.0
+      ]
+     ],
+     "height": 3.5,
+     "roof": "flat",
+     "material": "building"
+    },
+    {
+     "type": "surface",
+     "name": "Big cat enclosure 3 (grass)",
+     "polygon": [
+      [
+       149.0,
+       -21.0
+      ],
+      [
+       199.0,
+       -21.0
+      ],
+      [
+       199.0,
+       21.0
+      ],
+      [
+       149.0,
+       21.0
+      ]
+     ],
+     "material": "grass_wild"
+    },
+    {
+     "type": "fence",
+     "name": "Big cat enclosure 3 fence",
+     "points": [
+      [
+       149.0,
+       -21.0
+      ],
+      [
+       199.0,
+       -21.0
+      ],
+      [
+       199.0,
+       21.0
+      ],
+      [
+       149.0,
+       21.0
+      ]
+     ],
+     "height": 5.0,
+     "style": "mesh",
+     "closed": true
+    },
+    {
+     "type": "building",
+     "name": "Night house 3",
+     "footprint": [
+      [
+       151.0,
+       14.0
+      ],
+      [
+       163.0,
+       14.0
+      ],
+      [
+       163.0,
+       20.0
+      ],
+      [
+       151.0,
+       20.0
+      ]
+     ],
+     "height": 3.5,
+     "roof": "flat",
+     "material": "building"
+    },
+    {
+     "type": "surface",
+     "name": "Big cat enclosure 4 (grass)",
+     "polygon": [
+      [
+       149.0,
+       27.0
+      ],
+      [
+       199.0,
+       27.0
+      ],
+      [
+       199.0,
+       69.0
+      ],
+      [
+       149.0,
+       69.0
+      ]
+     ],
+     "material": "grass_wild"
+    },
+    {
+     "type": "fence",
+     "name": "Big cat enclosure 4 fence",
+     "points": [
+      [
+       149.0,
+       27.0
+      ],
+      [
+       199.0,
+       27.0
+      ],
+      [
+       199.0,
+       69.0
+      ],
+      [
+       149.0,
+       69.0
+      ]
+     ],
+     "height": 5.0,
+     "style": "mesh",
+     "closed": true
+    },
+    {
+     "type": "building",
+     "name": "Night house 4",
+     "footprint": [
+      [
+       151.0,
+       62.0
+      ],
+      [
+       163.0,
+       62.0
+      ],
+      [
+       163.0,
+       68.0
+      ],
+      [
+       151.0,
+       68.0
+      ]
+     ],
+     "height": 3.5,
+     "roof": "flat",
+     "material": "building"
+    },
+    {
+     "type": "surface",
+     "name": "Big cat enclosure 5 (grass)",
+     "polygon": [
+      [
+       149.0,
+       75.0
+      ],
+      [
+       199.0,
+       75.0
+      ],
+      [
+       199.0,
+       117.0
+      ],
+      [
+       149.0,
+       117.0
+      ]
+     ],
+     "material": "grass_wild"
+    },
+    {
+     "type": "fence",
+     "name": "Big cat enclosure 5 fence",
+     "points": [
+      [
+       149.0,
+       75.0
+      ],
+      [
+       199.0,
+       75.0
+      ],
+      [
+       199.0,
+       117.0
+      ],
+      [
+       149.0,
+       117.0
+      ]
+     ],
+     "height": 5.0,
+     "style": "mesh",
+     "closed": true
+    },
+    {
+     "type": "building",
+     "name": "Night house 5",
+     "footprint": [
+      [
+       151.0,
+       110.0
+      ],
+      [
+       163.0,
+       110.0
+      ],
+      [
+       163.0,
+       116.0
+      ],
+      [
+       151.0,
+       116.0
+      ]
+     ],
+     "height": 3.5,
+     "roof": "flat",
+     "material": "building"
+    },
+    {
+     "type": "surface",
+     "name": "Big cat enclosure 6 (grass)",
+     "polygon": [
+      [
+       213.0,
+       -117.0
+      ],
+      [
+       263.0,
+       -117.0
+      ],
+      [
+       263.0,
+       -75.0
+      ],
+      [
+       213.0,
+       -75.0
+      ]
+     ],
+     "material": "grass_wild"
+    },
+    {
+     "type": "fence",
+     "name": "Big cat enclosure 6 fence",
+     "points": [
+      [
+       213.0,
+       -117.0
+      ],
+      [
+       263.0,
+       -117.0
+      ],
+      [
+       263.0,
+       -75.0
+      ],
+      [
+       213.0,
+       -75.0
+      ]
+     ],
+     "height": 5.0,
+     "style": "mesh",
+     "closed": true
+    },
+    {
+     "type": "building",
+     "name": "Night house 6",
+     "footprint": [
+      [
+       249.0,
+       -82.0
+      ],
+      [
+       261.0,
+       -82.0
+      ],
+      [
+       261.0,
+       -76.0
+      ],
+      [
+       249.0,
+       -76.0
+      ]
+     ],
+     "height": 3.5,
+     "roof": "flat",
+     "material": "building"
+    },
+    {
+     "type": "surface",
+     "name": "Big cat enclosure 7 (grass)",
+     "polygon": [
+      [
+       213.0,
+       -69.0
+      ],
+      [
+       263.0,
+       -69.0
+      ],
+      [
+       263.0,
+       -27.0
+      ],
+      [
+       213.0,
+       -27.0
+      ]
+     ],
+     "material": "grass_wild"
+    },
+    {
+     "type": "fence",
+     "name": "Big cat enclosure 7 fence",
+     "points": [
+      [
+       213.0,
+       -69.0
+      ],
+      [
+       263.0,
+       -69.0
+      ],
+      [
+       263.0,
+       -27.0
+      ],
+      [
+       213.0,
+       -27.0
+      ]
+     ],
+     "height": 5.0,
+     "style": "mesh",
+     "closed": true
+    },
+    {
+     "type": "building",
+     "name": "Night house 7",
+     "footprint": [
+      [
+       249.0,
+       -34.0
+      ],
+      [
+       261.0,
+       -34.0
+      ],
+      [
+       261.0,
+       -28.0
+      ],
+      [
+       249.0,
+       -28.0
+      ]
+     ],
+     "height": 3.5,
+     "roof": "flat",
+     "material": "building"
+    },
+    {
+     "type": "surface",
+     "name": "Big cat enclosure 8 (grass)",
+     "polygon": [
+      [
+       213.0,
+       -21.0
+      ],
+      [
+       263.0,
+       -21.0
+      ],
+      [
+       263.0,
+       21.0
+      ],
+      [
+       213.0,
+       21.0
+      ]
+     ],
+     "material": "grass_wild"
+    },
+    {
+     "type": "fence",
+     "name": "Big cat enclosure 8 fence",
+     "points": [
+      [
+       213.0,
+       -21.0
+      ],
+      [
+       263.0,
+       -21.0
+      ],
+      [
+       263.0,
+       21.0
+      ],
+      [
+       213.0,
+       21.0
+      ]
+     ],
+     "height": 5.0,
+     "style": "mesh",
+     "closed": true
+    },
+    {
+     "type": "building",
+     "name": "Night house 8",
+     "footprint": [
+      [
+       249.0,
+       14.0
+      ],
+      [
+       261.0,
+       14.0
+      ],
+      [
+       261.0,
+       20.0
+      ],
+      [
+       249.0,
+       20.0
+      ]
+     ],
+     "height": 3.5,
+     "roof": "flat",
+     "material": "building"
+    },
+    {
+     "type": "surface",
+     "name": "Big cat enclosure 9 (grass)",
+     "polygon": [
+      [
+       213.0,
+       27.0
+      ],
+      [
+       263.0,
+       27.0
+      ],
+      [
+       263.0,
+       69.0
+      ],
+      [
+       213.0,
+       69.0
+      ]
+     ],
+     "material": "grass_wild"
+    },
+    {
+     "type": "fence",
+     "name": "Big cat enclosure 9 fence",
+     "points": [
+      [
+       213.0,
+       27.0
+      ],
+      [
+       263.0,
+       27.0
+      ],
+      [
+       263.0,
+       69.0
+      ],
+      [
+       213.0,
+       69.0
+      ]
+     ],
+     "height": 5.0,
+     "style": "mesh",
+     "closed": true
+    },
+    {
+     "type": "building",
+     "name": "Night house 9",
+     "footprint": [
+      [
+       249.0,
+       62.0
+      ],
+      [
+       261.0,
+       62.0
+      ],
+      [
+       261.0,
+       68.0
+      ],
+      [
+       249.0,
+       68.0
+      ]
+     ],
+     "height": 3.5,
+     "roof": "flat",
+     "material": "building"
+    },
+    {
+     "type": "surface",
+     "name": "Big cat enclosure 10 (grass)",
+     "polygon": [
+      [
+       213.0,
+       75.0
+      ],
+      [
+       263.0,
+       75.0
+      ],
+      [
+       263.0,
+       117.0
+      ],
+      [
+       213.0,
+       117.0
+      ]
+     ],
+     "material": "grass_wild"
+    },
+    {
+     "type": "fence",
+     "name": "Big cat enclosure 10 fence",
+     "points": [
+      [
+       213.0,
+       75.0
+      ],
+      [
+       263.0,
+       75.0
+      ],
+      [
+       263.0,
+       117.0
+      ],
+      [
+       213.0,
+       117.0
+      ]
+     ],
+     "height": 5.0,
+     "style": "mesh",
+     "closed": true
+    },
+    {
+     "type": "building",
+     "name": "Night house 10",
+     "footprint": [
+      [
+       249.0,
+       110.0
+      ],
+      [
+       261.0,
+       110.0
+      ],
+      [
+       261.0,
+       116.0
+      ],
+      [
+       249.0,
+       116.0
+      ]
+     ],
+     "height": 3.5,
+     "roof": "flat",
+     "material": "building"
+    },
+    {
+     "type": "surface",
+     "name": "Visitor path",
+     "polygon": [
+      [
+       201.0,
+       -125.0
+      ],
+      [
+       211.0,
+       -125.0
+      ],
+      [
+       211.0,
+       125.0
+      ],
+      [
+       201.0,
+       125.0
+      ]
+     ],
+     "material": "paving"
+    },
+    {
+     "type": "surface",
+     "name": "Large enclosure (grass)",
+     "polygon": [
+      [
+       278.0,
+       -123.0
+      ],
+      [
+       336.0,
+       -123.0
+      ],
+      [
+       336.0,
+       -49.0
+      ],
+      [
+       278.0,
+       -49.0
+      ]
+     ],
+     "material": "grass_wild"
+    },
+    {
+     "type": "fence",
+     "name": "Large enclosure fence",
+     "points": [
+      [
+       278.0,
+       -123.0
+      ],
+      [
+       336.0,
+       -123.0
+      ],
+      [
+       336.0,
+       -49.0
+      ],
+      [
+       278.0,
+       -49.0
+      ]
+     ],
+     "height": 5.0,
+     "style": "mesh",
+     "closed": true
+    },
+    {
+     "type": "water",
+     "name": "Large enclosure pool",
+     "polygon": [
+      [
+       311.85,
+       -95.0
+      ],
+      [
+       311.01,
+       -92.33
+      ],
+      [
+       308.02,
+       -90.51
+      ],
+      [
+       305.85,
+       -88.25
+      ],
+      [
+       302.31,
+       -86.26
+      ],
+      [
+       297.85,
+       -86.89
+      ],
+      [
+       294.08,
+       -88.16
+      ],
+      [
+       289.59,
+       -89.17
+      ],
+      [
+       286.95,
+       -91.83
+      ],
+      [
+       287.85,
+       -95.0
+      ],
+      [
+       288.46,
+       -97.8
+      ],
+      [
+       289.64,
+       -100.8
+      ],
+      [
+       293.85,
+       -102.1
+      ],
+      [
+       298.14,
+       -102.02
+      ],
+      [
+       302.02,
+       -102.64
+      ],
+      [
+       306.08,
+       -102.02
+      ],
+      [
+       307.97,
+       -99.46
+      ],
+      [
+       309.5,
+       -97.31
+      ]
+     ],
+     "kind": "pond"
+    },
+    {
+     "type": "building",
+     "name": "Large enclosure night house",
+     "footprint": [
+      [
+       310.0,
+       -59.5
+      ],
+      [
+       326.0,
+       -59.5
+      ],
+      [
+       326.0,
+       -52.5
+      ],
+      [
+       310.0,
+       -52.5
+      ]
+     ],
+     "height": 3.5,
+     "roof": "flat",
+     "material": "building"
+    }
+   ]
+  },
+  {
+   "id": "herbivore-reserve",
+   "name": "Herbivore Reserve",
+   "area": [
+    [
+     348,
+     -130
+    ],
+    [
+     441,
+     -130
+    ],
+    [
+     471,
+     130
+    ],
+    [
+     347,
+     130
+    ]
+   ],
+   "items": [
+    {
+     "type": "surface",
+     "name": "Paddock 1 (grass)",
+     "polygon": [
+      [
+       350,
+       -128
+      ],
+      [
+       441.2,
+       -128
+      ],
+      [
+       451.9,
+       -46
+      ],
+      [
+       350,
+       -46
+      ]
+     ],
+     "material": "grass_wild"
+    },
+    {
+     "type": "fence",
+     "name": "Paddock 1 fence",
+     "points": [
+      [
+       350,
+       -128
+      ],
+      [
+       441.2,
+       -128
+      ],
+      [
+       451.9,
+       -46
+      ],
+      [
+       350,
+       -46
+      ]
+     ],
+     "height": 1.6,
+     "style": "post_rail",
+     "closed": true
+    },
+    {
+     "type": "water",
+     "name": "Paddock 1 pond",
+     "polygon": [
+      [
+       413.59,
+       -97.0
+      ],
+      [
+       410.63,
+       -93.8
+      ],
+      [
+       406.44,
+       -91.6
+      ],
+      [
+       403.23,
+       -88.98
+      ],
+      [
+       397.87,
+       -87.85
+      ],
+      [
+       392.58,
+       -89.29
+      ],
+      [
+       388.07,
+       -90.24
+      ],
+      [
+       382.84,
+       -91.26
+      ],
+      [
+       380.93,
+       -94.12
+      ],
+      [
+       381.59,
+       -97.0
+      ],
+      [
+       380.56,
+       -99.96
+      ],
+      [
+       381.93,
+       -103.17
+      ],
+      [
+       387.23,
+       -104.57
+      ],
+      [
+       392.31,
+       -105.58
+      ],
+      [
+       398.14,
+       -107.02
+      ],
+      [
+       404.07,
+       -105.83
+      ],
+      [
+       407.35,
+       -102.83
+      ],
+      [
+       411.0,
+       -100.28
+      ]
+     ],
+     "kind": "pond"
+    },
+    {
+     "type": "shed",
+     "name": "Paddock 1 shade shelter",
+     "footprint": [
+      [
+       366.0,
+       -69.0
+      ],
+      [
+       378.0,
+       -69.0
+      ],
+      [
+       378.0,
+       -61.0
+      ],
+      [
+       366.0,
+       -61.0
+      ]
+     ],
+     "height": 4.0
+    },
+    {
+     "type": "surface",
+     "name": "Paddock 2 (grass)",
+     "polygon": [
+      [
+       350,
+       -40
+      ],
+      [
+       452.6,
+       -40
+      ],
+      [
+       463.3,
+       42
+      ],
+      [
+       350,
+       42
+      ]
+     ],
+     "material": "grass_wild"
+    },
+    {
+     "type": "fence",
+     "name": "Paddock 2 fence",
+     "points": [
+      [
+       350,
+       -40
+      ],
+      [
+       452.6,
+       -40
+      ],
+      [
+       463.3,
+       42
+      ],
+      [
+       350,
+       42
+      ]
+     ],
+     "height": 1.6,
+     "style": "post_rail",
+     "closed": true
+    },
+    {
+     "type": "water",
+     "name": "Paddock 2 pond",
+     "polygon": [
+      [
+       411.39,
+       -9.0
+      ],
+      [
+       408.28,
+       -6.28
+      ],
+      [
+       405.24,
+       -4.17
+      ],
+      [
+       402.79,
+       -1.41
+      ],
+      [
+       397.72,
+       -0.32
+      ],
+      [
+       392.59,
+       -1.31
+      ],
+      [
+       387.4,
+       -1.6
+      ],
+      [
+       381.56,
+       -2.66
+      ],
+      [
+       379.48,
+       -5.82
+      ],
+      [
+       379.39,
+       -9.0
+      ],
+      [
+       378.21,
+       -12.44
+      ],
+      [
+       380.72,
+       -15.74
+      ],
+      [
+       386.79,
+       -16.99
+      ],
+      [
+       392.17,
+       -18.04
+      ],
+      [
+       398.15,
+       -19.04
+      ],
+      [
+       403.4,
+       -17.19
+      ],
+      [
+       406.08,
+       -14.23
+      ],
+      [
+       409.55,
+       -11.98
+      ]
+     ],
+     "kind": "pond"
+    },
+    {
+     "type": "shed",
+     "name": "Paddock 2 shade shelter",
+     "footprint": [
+      [
+       366.0,
+       19.0
+      ],
+      [
+       378.0,
+       19.0
+      ],
+      [
+       378.0,
+       27.0
+      ],
+      [
+       366.0,
+       27.0
+      ]
+     ],
+     "height": 4.0
+    },
+    {
+     "type": "surface",
+     "name": "Paddock 3 (grass)",
+     "polygon": [
+      [
+       350,
+       48
+      ],
+      [
+       464.1,
+       48
+      ],
+      [
+       474.4,
+       128
+      ],
+      [
+       350,
+       128
+      ]
+     ],
+     "material": "grass_wild"
+    },
+    {
+     "type": "fence",
+     "name": "Paddock 3 fence",
+     "points": [
+      [
+       350,
+       48
+      ],
+      [
+       464.1,
+       48
+      ],
+      [
+       474.4,
+       128
+      ],
+      [
+       350,
+       128
+      ]
+     ],
+     "height": 1.6,
+     "style": "post_rail",
+     "closed": true
+    },
+    {
+     "type": "water",
+     "name": "Paddock 3 pond",
+     "polygon": [
+      [
+       411.35,
+       78.0
+      ],
+      [
+       408.74,
+       80.81
+      ],
+      [
+       406.59,
+       83.47
+      ],
+      [
+       403.89,
+       86.66
+      ],
+      [
+       398.03,
+       87.66
+      ],
+      [
+       392.25,
+       86.78
+      ],
+      [
+       386.28,
+       86.49
+      ],
+      [
+       380.58,
+       84.81
+      ],
+      [
+       379.29,
+       81.22
+      ],
+      [
+       379.35,
+       78.0
+      ],
+      [
+       378.67,
+       74.66
+      ],
+      [
+       382.07,
+       71.9
+      ],
+      [
+       387.89,
+       71.08
+      ],
+      [
+       392.47,
+       69.94
+      ],
+      [
+       397.8,
+       69.05
+      ],
+      [
+       402.28,
+       70.9
+      ],
+      [
+       405.09,
+       73.24
+      ],
+      [
+       409.36,
+       75.06
+      ]
+     ],
+     "kind": "pond"
+    },
+    {
+     "type": "shed",
+     "name": "Paddock 3 shade shelter",
+     "footprint": [
+      [
+       366.0,
+       106.0
+      ],
+      [
+       378.0,
+       106.0
+      ],
+      [
+       378.0,
+       114.0
+      ],
+      [
+       366.0,
+       114.0
+      ]
+     ],
+     "height": 4.0
+    }
+   ]
+  },
+  {
+   "id": "woodland",
+   "name": "Woodland (not described publicly)",
+   "area": [
+    [
+     -585,
+     140
+    ],
+    [
+     -376,
+     136
+    ],
+    [
+     -376,
+     -78
+    ],
+    [
+     -440,
+     -70
+    ]
+   ],
+   "items": []
+  }
+ ]
+}

@@ -1,0 +1,43 @@
+# Raw footage and pipeline outputs are large: keep them out of git.
+pipeline/input/**
+!pipeline/input/*/
+!pipeline/input/*/.gitkeep
+pipeline/work/
+pipeline/tools/
+pipeline/node_modules/
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Heavy 3D assets go to the CDN / Vercel Blob, never the repo.
+*.ply
+*.spz
+*.splat
+*.ksplat
+*.mp4
+*.mov
+*.mkv
+*.MP4
+*.MOV
+
+.DS_Store
+Thumbs.db
+
+# Tool caches and crash dumps
+pipeline/target/
+*.stackdump
+
+# Animal models: binaries go to the CDN, credits stay in git
+web/public/models/**/*.glb
+web/public/models/**/*.gltf
+web/public/models/**/*.zip
+web/public/models/**/*.bin
+web/public/models/**/textures/
+
+# World: data and scripts are the source; downloads and generated files stay out
+world/assets/
+world/publish/
+world/tools/node_modules/

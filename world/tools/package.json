@@ -1,0 +1,16 @@
+{
+  "name": "vantara-world-tools",
+  "private": true,
+  "description": "Asset prep for the web world (plant model levels of detail).",
+  "type": "module",
+  "scripts": {
+    "plants": "node build_plants.mjs"
+  },
+  "devDependencies": {
+    "@gltf-transform/core": "4.5.1",
+    "@gltf-transform/extensions": "4.5.1",
+    "@gltf-transform/functions": "4.5.1",
+    "meshoptimizer": "1.3.0",
+    "sharp": "0.35.5"
+  }
+}

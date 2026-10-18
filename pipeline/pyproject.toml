@@ -1,0 +1,30 @@
+[project]
+name = "vantara-pipeline"
+version = "0.1.0"
+description = "Video -> frames -> COLMAP -> Gaussian splat pipeline for Vantara 3D"
+requires-python = ">=3.11"
+dependencies = [
+    "numpy>=2.0",
+    "opencv-python-headless>=4.10",
+    "pycolmap>=4.2",
+]
+
+[project.scripts]
+extract-frames = "vantara_pipeline.extract:main"
+find-shots = "vantara_pipeline.shots:main"
+solve-poses = "vantara_pipeline.poses:main"
+train-splat = "vantara_pipeline.train:main"
+publish-splat = "vantara_pipeline.publish:main"
+
+[dependency-groups]
+dev = ["pytest>=8"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["vantara_pipeline"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

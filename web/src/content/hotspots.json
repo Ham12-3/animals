@@ -1,0 +1,9 @@
+{
+  "$comment": "Info hotspots per zone. Positions are in the zone's published frame (metres, +Y up, ground at 0). Find one in the explorer with ?debug: aim at a spot and press H to copy its position.",
+  "zones": {
+    "elephant-care-centre": [],
+    "big-cat-rescue": [],
+    "herbivore-reserve": [],
+    "wildlife-hospital": []
+  }
+}
